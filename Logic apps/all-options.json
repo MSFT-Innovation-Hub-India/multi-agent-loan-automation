@@ -1,0 +1,161 @@
+{
+    "definition": {
+        "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+        "actions": {
+            "Get_chat_completions": {
+                "type": "ServiceProvider",
+                "inputs": {
+                    "parameters": {
+                        "deploymentId": "gpt-4o-mini",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "You are a loan processing assistant. Always respond in JSON format only."
+                            },
+                            {
+                                "role": "user",
+                                "content": "Extract the customer's intent from the following email:\\n\\n@{triggerOutputs()?['body']?['Body']}\\n\\nReturn only valid JSON with the following fields: intent, loan_number, urgency, requested_change, action, document_requested. Do not include any explanations or extra text."
+                            }
+                        ],
+                        "temperature": 1
+                    },
+                    "serviceProviderConfiguration": {
+                        "connectionName": "openai-2",
+                        "operationId": "getChatCompletions",
+                        "serviceProviderId": "/serviceProviders/openai"
+                    }
+                },
+                "runAfter": {}
+            },
+            "Switch": {
+                "type": "Switch",
+                "expression": "@body('Parse_JSON')?['intent']",
+                "default": {
+                    "actions": {}
+                },
+                "cases": {
+                    "Case": {
+                        "actions": {},
+                        "case": "request_interest_reduction"
+                    },
+                    "Case 2": {
+                        "actions": {},
+                        "case": "request_NOC"
+                    },
+                    "Case 3": {
+                        "actions": {},
+                        "case": "request_document"
+                    },
+                    "Case 4": {
+                        "actions": {},
+                        "case": "loan_status_query"
+                    },
+                    "Case 5": {
+                        "actions": {
+                            "Send_an_email_(V2)": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "outlook-1"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "body": {
+                                        "To": "@triggerBody()?['From']",
+                                        "Subject": "Complaint Received – Your Request is Being Processed",
+                                        "Body": "<p class=\"editor-paragraph\">Dear Customer,<br><br>We’ve received your complaint and it has been forwarded to our support team.<br>We’ll get back to you as soon as possible.<br><br>Thank you for your patience.<br><br>Best regards,<br>Loan Support Team</p>",
+                                        "Importance": "Normal"
+                                    },
+                                    "path": "/v2/Mail"
+                                }
+                            }
+                        },
+                        "case": "complaint"
+                    }
+                },
+                "runAfter": {
+                    "Parse_JSON": [
+                        "SUCCEEDED"
+                    ]
+                }
+            },
+            "Parse_JSON": {
+                "type": "ParseJson",
+                "inputs": {
+                    "content": "@body('Get_chat_completions')?['choices'][0]?['message']?['content']",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "intent": {
+                                "type": "string"
+                            },
+                            "loan_number": {
+                                "type": "string"
+                            },
+                            "urgency": {
+                                "type": "string"
+                            },
+                            "requested_change": {
+                                "type": "string"
+                            },
+                            "action": {
+                                "type": "string"
+                            },
+                            "document_requested": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "runAfter": {
+                    "Get_chat_completions": [
+                        "SUCCEEDED"
+                    ]
+                }
+            }
+        },
+        "contentVersion": "1.0.0.0",
+        "outputs": {},
+        "triggers": {
+            "When_a_new_email_arrives_(V2)": {
+                "type": "ApiConnectionNotification",
+                "inputs": {
+                    "host": {
+                        "connection": {
+                            "referenceName": "outlook-1"
+                        }
+                    },
+                    "fetch": {
+                        "pathTemplate": {
+                            "template": "/v2/Mail/OnNewEmail"
+                        },
+                        "method": "get",
+                        "queries": {
+                            "importance": "Any",
+                            "fetchOnlyWithAttachment": false,
+                            "includeAttachments": false,
+                            "folderPath": "Inbox"
+                        }
+                    },
+                    "subscribe": {
+                        "body": {
+                            "NotificationUrl": "@listCallbackUrl()"
+                        },
+                        "pathTemplate": {
+                            "template": "/MailSubscriptionPoke/$subscriptions"
+                        },
+                        "method": "post",
+                        "queries": {
+                            "importance": "Any",
+                            "fetchOnlyWithAttachment": false,
+                            "folderPath": "Inbox"
+                        }
+                    }
+                },
+                "splitOn": "@triggerBody()?['value']"
+            }
+        }
+    },
+    "kind": "Stateful"
+}
