@@ -51,8 +51,8 @@
                             "method": "post",
                             "body": {
                                 "To": "@triggerBody()?['From']",
-                                "Subject": "Request approved",
-                                "Body": "<p class=\"editor-paragraph\">done ,<br>thanks</p>",
+                                "Subject": "@triggerBody()?['Subject']",
+                                "Body": "<p class=\"editor-paragraph\">Dear sir/madam,<br>We are pleased to inform you that your request for a reduction in the interest rate on your loan account has been approved.<br><br>Thank you for banking with us.<br><br>Best regards,<br>bank manager</p>",
                                 "Importance": "Normal"
                             },
                             "path": "/v2/Mail"
@@ -61,22 +61,86 @@
                 },
                 "else": {
                     "actions": {
-                        "Send_an_email_(V2)_1": {
-                            "type": "ApiConnection",
+                        "Send_email_with_options": {
+                            "type": "ApiConnectionWebhook",
                             "inputs": {
                                 "host": {
                                     "connection": {
                                         "referenceName": "outlook-1"
                                     }
                                 },
-                                "method": "post",
                                 "body": {
-                                    "To": "@triggerBody()?['From']",
-                                    "Subject": "not approved",
-                                    "Body": "<p class=\"editor-paragraph\">done ,<br>thanks</p>",
-                                    "Importance": "Normal"
+                                    "NotificationUrl": "@listCallbackUrl()",
+                                    "Message": {
+                                        "To": "loandemo1@outlook.com",
+                                        "Importance": "Normal",
+                                        "HideHTMLMessage": false,
+                                        "ShowHTMLConfirmationDialog": false,
+                                        "Subject": "Your input is required",
+                                        "Options": "Approve,Decline"
+                                    }
                                 },
-                                "path": "/v2/Mail"
+                                "path": "/mailwithoptions/$subscriptions"
+                            }
+                        },
+                        "Condition_1": {
+                            "type": "If",
+                            "expression": {
+                                "and": [
+                                    {
+                                        "equals": [
+                                            "Approve",
+                                            "Approve"
+                                        ]
+                                    }
+                                ]
+                            },
+                            "actions": {
+                                "Send_an_email_(V2)_1": {
+                                    "type": "ApiConnection",
+                                    "inputs": {
+                                        "host": {
+                                            "connection": {
+                                                "referenceName": "outlook-1"
+                                            }
+                                        },
+                                        "method": "post",
+                                        "body": {
+                                            "To": "@triggerBody()?['From']",
+                                            "Subject": "@triggerBody()?['Subject']",
+                                            "Body": "<p class=\"editor-paragraph\">Dear sir/madam,<br>We are pleased to inform you that your request for a reduction in the interest rate on your loan account has been approved. <br><br>Thank you for banking with us.<br><br>Best regards,</p><p class=\"editor-paragraph\">bank manager</p>",
+                                            "Importance": "Normal"
+                                        },
+                                        "path": "/v2/Mail"
+                                    }
+                                }
+                            },
+                            "else": {
+                                "actions": {
+                                    "Send_an_email_(V2)_2": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "referenceName": "outlook-1"
+                                                }
+                                            },
+                                            "method": "post",
+                                            "body": {
+                                                "To": "@triggerBody()?['From']",
+                                                "Subject": "@triggerBody()?['Subject']",
+                                                "Body": "<p class=\"editor-paragraph\">Dear Sir/Ma'am,<br>Thank you for your request regarding a reduction in the interest rate on your loan account. After careful review, we regret to inform you that we are unable to approve the request at this time.<br><br>We appreciate your understanding and continued association with us.<br><br>Best regards,<br>Manager</p>",
+                                                "Importance": "Normal"
+                                            },
+                                            "path": "/v2/Mail"
+                                        }
+                                    }
+                                }
+                            },
+                            "runAfter": {
+                                "Send_email_with_options": [
+                                    "SUCCEEDED"
+                                ]
                             }
                         }
                     }
