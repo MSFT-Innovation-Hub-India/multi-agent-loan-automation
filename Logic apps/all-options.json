@@ -35,7 +35,80 @@
                 },
                 "cases": {
                     "Case": {
-                        "actions": {},
+                        "actions": {
+                            "Get_row_(V2)": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "sql"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('default'))},@{encodeURIComponent(encodeURIComponent('default'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[bank_customers]'))}/items/@{encodeURIComponent(encodeURIComponent(body('Parse_JSON')?['loan_number']))}"
+                                }
+                            },
+                            "Condition": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "greater": [
+                                                "credit score ",
+                                                750
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {
+                                    "Send_an_email_(V2)_1": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "referenceName": "outlook-2"
+                                                }
+                                            },
+                                            "method": "post",
+                                            "body": {
+                                                "To": "@triggerBody()?['From']",
+                                                "Subject": "Reduced the intreset rate",
+                                                "Body": "<p class=\"editor-paragraph\">done</p>",
+                                                "Importance": "Normal"
+                                            },
+                                            "path": "/v2/Mail"
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Send_an_email_(V2)_2": {
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "referenceName": "outlook-2"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "body": {
+                                                    "To": "@triggerBody()?['From']",
+                                                    "Subject": "not approved",
+                                                    "Body": "<p class=\"editor-paragraph\">no</p>",
+                                                    "Importance": "Normal"
+                                                },
+                                                "path": "/v2/Mail"
+                                            }
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_row_(V2)": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            }
+                        },
                         "case": "request_interest_reduction"
                     },
                     "Case 2": {
@@ -47,7 +120,77 @@
                         "case": "request_document"
                     },
                     "Case 4": {
-                        "actions": {},
+                        "actions": {
+                            "Get_row_(V2)_1": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "sql"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('default'))},@{encodeURIComponent(encodeURIComponent('default'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[bank_customers]'))}/items/@{encodeURIComponent(encodeURIComponent(body('Parse_JSON')?['loan_number']))}"
+                                }
+                            },
+                            "Parse_JSON_1": {
+                                "type": "ParseJson",
+                                "inputs": {
+                                    "content": "@body('Get_row_(V2)_1')['customer_id']",
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {
+                                            "intent": {
+                                                "type": "string"
+                                            },
+                                            "loan_number": {
+                                                "type": "string"
+                                            },
+                                            "urgency": {
+                                                "type": "string"
+                                            },
+                                            "requested_change": {
+                                                "type": "string"
+                                            },
+                                            "action": {
+                                                "type": "string"
+                                            },
+                                            "document_requested": {
+                                                "type": "string"
+                                            }
+                                        }
+                                    }
+                                },
+                                "runAfter": {
+                                    "Get_row_(V2)_1": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            },
+                            "Send_an_email_(V2)_3": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "outlook-2"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "body": {
+                                        "To": "@triggerBody()?['From']",
+                                        "Subject": "your details",
+                                        "Body": "<p class=\"editor-paragraph\">@{body('Parse_JSON_1')?['intent']}</p>",
+                                        "Importance": "Normal"
+                                    },
+                                    "path": "/v2/Mail"
+                                },
+                                "runAfter": {
+                                    "Parse_JSON_1": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            }
+                        },
                         "case": "loan_status_query"
                     },
                     "Case 5": {
@@ -57,7 +200,7 @@
                                 "inputs": {
                                     "host": {
                                         "connection": {
-                                            "referenceName": "outlook-1"
+                                            "referenceName": "outlook-2"
                                         }
                                     },
                                     "method": "post",
@@ -123,7 +266,7 @@
                 "inputs": {
                     "host": {
                         "connection": {
-                            "referenceName": "outlook-1"
+                            "referenceName": "outlook-2"
                         }
                     },
                     "fetch": {
