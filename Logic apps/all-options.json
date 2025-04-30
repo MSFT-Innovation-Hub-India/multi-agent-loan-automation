@@ -14,7 +14,7 @@
                             },
                             {
                                 "role": "user",
-                                "content": "Extract the customer's intent from the following email:\\n\\n@{triggerOutputs()?['body']?['Body']}\\n\\nReturn only valid JSON with the following fields: intent, loan_number, urgency, requested_change, action, document_requested. Do not include any explanations or extra text."
+                                "content": "Extract the following fields from the customer's email:\n\n@{triggerBody()?['Body']}\n\nReturn only the following as a valid JSON object:\n\nFields:\n- customer_id, customer_name, loan_id, amt_in_bank, has_loan, interest_rate, credit_score, intent\n\nData types:\n- customer_id, loan_id, credit_score must be integers or null\n- amt_in_bank must be a number (integer or decimal) or null\n- interest_rate must be a decimal or null\n- has_loan must be 0 or 1 (integer) or null\n- intent must be a string\n\nAllowed values for intent:\n- request_interest_reduction\n- update_personal_details\n- request_bank_statement\n- loan_status_query\n\nIf the message does not match any of the above intents, set intent as: complaint\n\nOutput must contain only the pure JSON object. Do not include markdown formatting, code fences, comments, or explanations."
                             }
                         ],
                         "temperature": 1
@@ -29,9 +29,28 @@
             },
             "Switch": {
                 "type": "Switch",
-                "expression": "@body('Parse_JSON')?['intent']",
+                "expression": "@body('Parse_JSON')['intent']",
                 "default": {
-                    "actions": {}
+                    "actions": {
+                        "Send_an_email_(V2)_3-copy_1": {
+                            "type": "ApiConnection",
+                            "inputs": {
+                                "host": {
+                                    "connection": {
+                                        "referenceName": "outlook-2"
+                                    }
+                                },
+                                "method": "post",
+                                "body": {
+                                    "To": "@triggerBody()?['From']",
+                                    "Subject": "Acknowledgement of Your Complaint",
+                                    "Body": "<p class=\"editor-paragraph\">Dear Sir/Madam,<br><br>Thank you for bringing your concern to our attention.<br><br>We acknowledge receipt of your complain, and we understand the inconvenience this may have caused you. Please be assured that your feedback is important to us, and we are currently investigating the matter with the highest priority.<br><br>Your complaint has been registered . Our team is reviewing the details and will aim to provide a resolution within 2 business days. If any additional information is required, a representative from our team will reach out to you directly.<br><br>We appreciate your patience and understanding, and we remain committed to ensuring your issue is resolved satisfactorily.<br><br>Warm regards,</p><br><p class=\"editor-paragraph\">Bank Manager</p>",
+                                    "Importance": "Normal"
+                                },
+                                "path": "/v2/Mail"
+                            }
+                        }
+                    }
                 },
                 "cases": {
                     "Case": {
@@ -45,7 +64,7 @@
                                         }
                                     },
                                     "method": "get",
-                                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('default'))},@{encodeURIComponent(encodeURIComponent('default'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[bank_customers]'))}/items/@{encodeURIComponent(encodeURIComponent(body('Parse_JSON')?['loan_number']))}"
+                                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('default'))},@{encodeURIComponent(encodeURIComponent('default'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[bank_customers]'))}/items/@{encodeURIComponent(encodeURIComponent(body('Parse_JSON')?['customer_id']))}"
                                 }
                             },
                             "Condition": {
@@ -54,7 +73,7 @@
                                     "and": [
                                         {
                                             "greater": [
-                                                "credit score ",
+                                                "@body('Get_row_(V2)')?['credit_score']",
                                                 750
                                             ]
                                         }
@@ -72,8 +91,8 @@
                                             "method": "post",
                                             "body": {
                                                 "To": "@triggerBody()?['From']",
-                                                "Subject": "Reduced the intreset rate",
-                                                "Body": "<p class=\"editor-paragraph\">done</p>",
+                                                "Subject": "Approval of Reduced Interest Rate on Your Loan",
+                                                "Body": "<p class=\"editor-paragraph\">Dear @{body('Get_row_(V2)')?['customer_name']} ,<br><br>I hope this message finds you well.<br><br>Thank you for your recent request regarding a reduction in the interest rate on your loan with us. We have carefully reviewed your request along with your account history and credit profile.<br><br>We are pleased to inform you that, in recognition of your excellent credit score and consistent repayment track record, we have approved a reduced interest rate of on your loan.<br><br>This revised rate will reflect in your next billing cycle, and a confirmation letter outlining the updated terms will be sent to you shortly.<br><br>We value your relationship with Bank , and we are committed to supporting your financial goals. Should you have any questions or need further assistance, please do not hesitate to contact us.<br><br>Warm regards,</p><p class=\"editor-paragraph\">Bank Manager</p>",
                                                 "Importance": "Normal"
                                             },
                                             "path": "/v2/Mail"
@@ -93,8 +112,8 @@
                                                 "method": "post",
                                                 "body": {
                                                     "To": "@triggerBody()?['From']",
-                                                    "Subject": "not approved",
-                                                    "Body": "<p class=\"editor-paragraph\">no</p>",
+                                                    "Subject": "Request for Interest Rate Reduction – Update\n\n",
+                                                    "Body": "<p class=\"editor-paragraph\">Dear @{body('Get_row_(V2)')?['customer_name']},<br><br>Thank you for reaching out to us regarding a possible reduction in the interest rate on your loan.<br><br>We have carefully reviewed your request, including a detailed assessment of your credit profile. After thorough consideration, we regret to inform you that we are unable to approve a reduced interest rate at this time. This decision is primarily due to your current credit score not meeting the eligibility criteria required for interest rate adjustments.<br><br>We understand this may be disappointing, but please be assured that our goal is to support your financial well-being. We encourage you to continue maintaining timely payments and managing your credit responsibly, which may help improve your eligibility for future benefits.<br><br>If you would like assistance in understanding your credit report or exploring other financial solutions, our team is here to help.<br><br>Thank you for banking with Bank .<br><br>Warm regards,<br>Bank Manager</p>",
                                                     "Importance": "Normal"
                                                 },
                                                 "path": "/v2/Mail"
@@ -111,13 +130,45 @@
                         },
                         "case": "request_interest_reduction"
                     },
-                    "Case 2": {
-                        "actions": {},
-                        "case": "request_NOC"
-                    },
                     "Case 3": {
-                        "actions": {},
-                        "case": "request_document"
+                        "actions": {
+                            "Get_row_(V2)_2": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "sql"
+                                        }
+                                    },
+                                    "method": "get",
+                                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('default'))},@{encodeURIComponent(encodeURIComponent('default'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[bank_customers]'))}/items/@{encodeURIComponent(encodeURIComponent(body('Parse_JSON')?['customer_id']))}"
+                                }
+                            },
+                            "Send_an_email_(V2)_3-copy": {
+                                "type": "ApiConnection",
+                                "inputs": {
+                                    "host": {
+                                        "connection": {
+                                            "referenceName": "outlook-2"
+                                        }
+                                    },
+                                    "method": "post",
+                                    "body": {
+                                        "To": "@triggerBody()?['From']",
+                                        "Subject": "Your Bank Statement and Account Details",
+                                        "Body": "<p class=\"editor-paragraph\">Dear @{body('Get_row_(V2)_2')?['customer_name']},<br><br>Thank you for your request for your bank statement and associated account information.<br><br>Please find below the summary of your account as of [Date]:<br><br>Customer ID: @{body('Get_row_(V2)_2')['customer_id']}<br><br>Loan ID: @{body('Get_row_(V2)_2')?['loan_id']}<br><br>Current Account Balance: ₹@{body('Get_row_(V2)_2')?['amt_in_bank']}<br><br>Loan Interest Rate: @{body('Get_row_(V2)_2')?['interest_rate']}%<br><br>Current Credit Score: @{body('Get_row_(V2)_2')?['credit_score']}<br><br> Please review the information and let us know if you have any questions or need clarification on any of the entries.<br><br>We appreciate your continued trust in Bank and are always here to assist with your banking needs.<br><br>Warm regards,</p><br><p class=\"editor-paragraph\">Bank Manager</p>",
+                                        "Importance": "Normal"
+                                    },
+                                    "path": "/v2/Mail"
+                                },
+                                "runAfter": {
+                                    "Get_row_(V2)_2": [
+                                        "SUCCEEDED"
+                                    ]
+                                }
+                            }
+                        },
+                        "case": "request_bank_statement"
                     },
                     "Case 4": {
                         "actions": {
@@ -130,33 +181,59 @@
                                         }
                                     },
                                     "method": "get",
-                                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('default'))},@{encodeURIComponent(encodeURIComponent('default'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[bank_customers]'))}/items/@{encodeURIComponent(encodeURIComponent(body('Parse_JSON')?['loan_number']))}"
+                                    "path": "/v2/datasets/@{encodeURIComponent(encodeURIComponent('default'))},@{encodeURIComponent(encodeURIComponent('default'))}/tables/@{encodeURIComponent(encodeURIComponent('[dbo].[bank_customers]'))}/items/@{encodeURIComponent(encodeURIComponent(body('Parse_JSON')?['customer_id']))}"
                                 }
                             },
-                            "Parse_JSON_1": {
-                                "type": "ParseJson",
-                                "inputs": {
-                                    "content": "@body('Get_row_(V2)_1')['customer_id']",
-                                    "schema": {
-                                        "type": "object",
-                                        "properties": {
-                                            "intent": {
-                                                "type": "string"
+                            "Condition_1": {
+                                "type": "If",
+                                "expression": {
+                                    "and": [
+                                        {
+                                            "equals": [
+                                                "@body('Get_row_(V2)_1')?['has_loan']",
+                                                1
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "actions": {
+                                    "Send_an_email_(V2)_3": {
+                                        "type": "ApiConnection",
+                                        "inputs": {
+                                            "host": {
+                                                "connection": {
+                                                    "referenceName": "outlook-2"
+                                                }
                                             },
-                                            "loan_number": {
-                                                "type": "string"
+                                            "method": "post",
+                                            "body": {
+                                                "To": "@triggerBody()?['From']",
+                                                "Subject": "Loan Approval Confirmation and Details",
+                                                "Body": "<p class=\"editor-paragraph\">Dear @{body('Get_row_(V2)_1')?['customer_name']},<br><br>We are pleased to inform you that your loan application has been successfully approved.<br><br>Please find the details of your approved loan below:<br><br>Loan ID: @{body('Get_row_(V2)_1')?['loan_id']}<br><br>Interest Rate: @{body('Get_row_(V2)_1')?['interest_rate']}% per annum<br><br>The sanctioned amount will be credited to your account shortly, and a formal sanction letter along with the repayment schedule will be shared with you for your records.<br><br>We thank you for choosing Bank  and look forward to supporting you in your financial journey. If you have any questions or require assistance with the next steps, please feel free to reach out.<br><br>Warm regards,<br><br>Bank Manager</p>",
+                                                "Importance": "Normal"
                                             },
-                                            "urgency": {
-                                                "type": "string"
-                                            },
-                                            "requested_change": {
-                                                "type": "string"
-                                            },
-                                            "action": {
-                                                "type": "string"
-                                            },
-                                            "document_requested": {
-                                                "type": "string"
+                                            "path": "/v2/Mail"
+                                        }
+                                    }
+                                },
+                                "else": {
+                                    "actions": {
+                                        "Send_an_email_(V2)": {
+                                            "type": "ApiConnection",
+                                            "inputs": {
+                                                "host": {
+                                                    "connection": {
+                                                        "referenceName": "outlook-2"
+                                                    }
+                                                },
+                                                "method": "post",
+                                                "body": {
+                                                    "To": "@triggerBody()?['From']",
+                                                    "Subject": "Loan Application Status – Under Review",
+                                                    "Body": "<p class=\"editor-paragraph\">Dear @{body('Get_row_(V2)_1')?['customer_name']},<br><br>Thank you for your recent loan application with Bank .<br><br>We would like to inform you that your application is currently under review. Our credit and verification teams are in the process of completing the necessary assessments to ensure all eligibility criteria are met.<br><br>We appreciate your patience during this time and will notify you as soon as a decision has been made.  If we require any additional information or documentation, a representative from our team will contact you directly.<br><br>Thank you for choosing Bank. Please feel free to reach out if you have any questions in the meantime.<br><br>Warm regards,</p><br><p class=\"editor-paragraph\">Bank Manager</p>",
+                                                    "Importance": "Normal"
+                                                },
+                                                "path": "/v2/Mail"
                                             }
                                         }
                                     }
@@ -166,55 +243,9 @@
                                         "SUCCEEDED"
                                     ]
                                 }
-                            },
-                            "Send_an_email_(V2)_3": {
-                                "type": "ApiConnection",
-                                "inputs": {
-                                    "host": {
-                                        "connection": {
-                                            "referenceName": "outlook-2"
-                                        }
-                                    },
-                                    "method": "post",
-                                    "body": {
-                                        "To": "@triggerBody()?['From']",
-                                        "Subject": "your details",
-                                        "Body": "<p class=\"editor-paragraph\">@{body('Parse_JSON_1')?['intent']}</p>",
-                                        "Importance": "Normal"
-                                    },
-                                    "path": "/v2/Mail"
-                                },
-                                "runAfter": {
-                                    "Parse_JSON_1": [
-                                        "SUCCEEDED"
-                                    ]
-                                }
                             }
                         },
                         "case": "loan_status_query"
-                    },
-                    "Case 5": {
-                        "actions": {
-                            "Send_an_email_(V2)": {
-                                "type": "ApiConnection",
-                                "inputs": {
-                                    "host": {
-                                        "connection": {
-                                            "referenceName": "outlook-2"
-                                        }
-                                    },
-                                    "method": "post",
-                                    "body": {
-                                        "To": "@triggerBody()?['From']",
-                                        "Subject": "Complaint Received – Your Request is Being Processed",
-                                        "Body": "<p class=\"editor-paragraph\">Dear Customer,<br><br>We’ve received your complaint and it has been forwarded to our support team.<br>We’ll get back to you as soon as possible.<br><br>Thank you for your patience.<br><br>Best regards,<br>Loan Support Team</p>",
-                                        "Importance": "Normal"
-                                    },
-                                    "path": "/v2/Mail"
-                                }
-                            }
-                        },
-                        "case": "complaint"
                     }
                 },
                 "runAfter": {
@@ -226,29 +257,64 @@
             "Parse_JSON": {
                 "type": "ParseJson",
                 "inputs": {
-                    "content": "@body('Get_chat_completions')?['choices'][0]?['message']?['content']",
+                    "content": "@body('Get_chat_completions')?['content']",
                     "schema": {
                         "type": "object",
                         "properties": {
+                            "customer_id": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "customer_name": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ]
+                            },
+                            "loan_id": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
+                            "amt_in_bank": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ]
+                            },
+                            "has_loan": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ],
+                                "enum": [
+                                    0,
+                                    1,
+                                    null
+                                ]
+                            },
+                            "interest_rate": {
+                                "type": [
+                                    "number",
+                                    "null"
+                                ]
+                            },
+                            "credit_score": {
+                                "type": [
+                                    "integer",
+                                    "null"
+                                ]
+                            },
                             "intent": {
                                 "type": "string"
-                            },
-                            "loan_number": {
-                                "type": "string"
-                            },
-                            "urgency": {
-                                "type": "string"
-                            },
-                            "requested_change": {
-                                "type": "string"
-                            },
-                            "action": {
-                                "type": "string"
-                            },
-                            "document_requested": {
-                                "type": "string"
                             }
-                        }
+                        },
+                        "required": [
+                            "intent"
+                        ]
                     }
                 },
                 "runAfter": {
