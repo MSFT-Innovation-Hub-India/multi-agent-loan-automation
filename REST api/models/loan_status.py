@@ -57,6 +57,14 @@ class LoanApprovalRequest(BaseModel):
     interest_rate: float = Field(..., ge=0, le=100, description="Annual interest rate")
     tenure_months: int = Field(..., gt=0, le=360, description="Loan tenure in months")
     reviewer_comments: str = Field(..., description="Comments from the loan reviewer")
+    loan_officer_id: str = Field(..., description="ID of the loan officer")
+    document_verifier_id: str = Field(..., description="ID of the document verifier")
+    field_agent_id: str = Field(..., description="ID of the field agent")
+    bank_manager_id: str = Field(..., description="ID of the bank manager")
+    branch_name: str = Field(..., description="Name of the branch")
+    verification_date: Optional[datetime] = Field(None, description="Date of document verification")
+    field_visit_date: Optional[datetime] = Field(None, description="Date of field visit")
+    manager_approval_date: Optional[datetime] = Field(None, description="Date of manager approval")
 
 class LoanRejectionRequest(BaseModel):
     rejection_reason: str = Field(..., description="Detailed reason for rejection")
