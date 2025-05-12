@@ -16,15 +16,12 @@ from models.database_models import LoanApplication, LoanDecision
 import uvicorn
 import os
 
-# Create tables if they don't exist
-Base.metadata.create_all(bind=engine)
-
 # Get root_path from environment variable, default to "" for local development
 root_path = os.getenv("ROOT_PATH", "")
 
 app = FastAPI(
     title="Loan Processing API",
-    description="REST API for loan processing and orchestration. Users will be able to submit loan applications, check loan status, and make approval/rejection decisions.",
+    description="REST API for loan processing and orchestration. Supports Aadhaar and PAN verification, and processes loan applications in Indian Rupees (₹).",
     version="1.0.0",
     root_path=root_path,
     openapi_url="/openapi.json",
@@ -97,12 +94,27 @@ async def apply_loan(
 
     Parameters:
     - applicant_name: Full name of the loan applicant
-    - email: Valid email address of the applicant
-    - annual_income: Annual income in USD
-    - loan_amount: Requested loan amount in USD
+    - gender: Gender of the applicant
+    - dob: Date of birth
+    - age: Age of the applicant (18-100)
+    - marital_status: Marital status
+    - education_level: Education level
+    - annual_income: Annual income in ₹
+    - employment_type: Type of employment
+    - loan_amount: Requested loan amount in ₹
+    - tenure_months: Loan tenure in months (1-360)
+    - credit_score: Credit score (300-850, optional)
+    - existing_loans: Whether applicant has existing loans
+    - num_existing_loans: Number of existing loans
+    - total_emi_amount: Total EMI amount in ₹
     - loan_purpose: Purpose of the loan
-    - employment_status: Current employment status
-    - credit_score: Credit score of the applicant
+    - city: City of residence
+    - phone_number: Contact phone number
+    - email: Email address
+    - aadhaar_number: 12-digit Aadhaar number
+    - pan_number: 10-digit PAN number
+    - account_type: Bank account type
+    - guarantor_available: Whether a guarantor is available
 
     Returns:
     - LoanApplicationResponse: Created loan application details with unique ID
@@ -110,14 +122,29 @@ async def apply_loan(
     try:
         db_application = LoanApplication(
             applicant_name=application.applicant_name,
-            email=application.email,
+            gender=application.gender,
+            dob=application.dob,
+            age=application.age,
+            marital_status=application.marital_status,
+            education_level=application.education_level,
             annual_income=float(application.annual_income),
+            employment_type=application.employment_type,
             loan_amount=float(application.loan_amount),
-            loan_purpose=application.loan_purpose,
-            employment_status=application.employment_status,
+            tenure_months=application.tenure_months,
             credit_score=application.credit_score,
+            existing_loans=application.existing_loans,
+            num_existing_loans=application.num_existing_loans,
+            total_emi_amount=float(application.total_emi_amount),
+            loan_purpose=application.loan_purpose,
+            city=application.city,
+            phone_number=application.phone_number,
+            email=application.email,
+            aadhaar_number=application.aadhaar_number,
+            pan_number=application.pan_number,
+            account_type=application.account_type,
+            guarantor_available=application.guarantor_available,
             application_date=datetime.now(),
-            status=LoanStatusType.PENDING  # Set initial status to PENDING
+            status=LoanStatusType.PENDING
         )
         
         db.add(db_application)
@@ -173,10 +200,18 @@ async def approve_loan(
     Parameters:
     - loan_id: Unique identifier of the loan application to approve
     - approval: LoanApprovalRequest containing:
-        - approved_amount: Approved loan amount in USD
+        - approved_amount: Approved loan amount in ₹
         - interest_rate: Annual interest rate as a percentage
-        - tenure_months: Loan duration in months
-        - reviewer_comments: Optional comments from the loan reviewer
+        - tenure_months: Loan duration in months (1-360)
+        - reviewer_comments: Comments from the loan reviewer
+        - loan_officer_id: ID of the loan officer
+        - document_verifier_id: ID of the document verifier
+        - field_agent_id: ID of the field agent
+        - bank_manager_id: ID of the bank manager
+        - branch_name: Name of the branch
+        - verification_date: Date of document verification (optional)
+        - field_visit_date: Date of field visit (optional)
+        - manager_approval_date: Date of manager approval (optional)
 
     Returns:
     - Detailed response containing approval status and loan terms
@@ -186,9 +221,7 @@ async def approve_loan(
         raise HTTPException(status_code=404, detail="Loan application not found")
 
     if loan.status != LoanStatusType.PENDING:
-        raise HTTPException(status_code=400, detail="Can only approve applications in PENDING status")
-
-    # Update application status
+        raise HTTPException(status_code=400, detail="Can only approve applications in PENDING status")    # Update application status
     loan.status = LoanStatusType.APPROVED
 
     # Create decision record
@@ -199,13 +232,21 @@ async def approve_loan(
         reviewer_comments=approval.reviewer_comments,
         approved_amount=float(approval.approved_amount),
         interest_rate=float(approval.interest_rate),
-        tenure_months=approval.tenure_months
+        tenure_months=approval.tenure_months,
+        loan_officer_id=approval.loan_officer_id,
+        document_verifier_id=approval.document_verifier_id,
+        field_agent_id=approval.field_agent_id,
+        bank_manager_id=approval.bank_manager_id,
+        branch_name=approval.branch_name,
+        verification_date=approval.verification_date,
+        field_visit_date=approval.field_visit_date,
+        manager_approval_date=approval.manager_approval_date
     )
 
     db.add(db_decision)
     db.commit()
     db.refresh(db_decision)
-
+    
     return {
         "status": "success",
         "message": "Loan application approved successfully",
@@ -217,7 +258,15 @@ async def approve_loan(
             "approved_amount": db_decision.approved_amount,
             "interest_rate": db_decision.interest_rate,
             "tenure_months": db_decision.tenure_months,
-            "approved_at": db_decision.decision_date
+            "approved_at": db_decision.decision_date,
+            "loan_officer_id": db_decision.loan_officer_id,
+            "document_verifier_id": db_decision.document_verifier_id,
+            "field_agent_id": db_decision.field_agent_id,
+            "bank_manager_id": db_decision.bank_manager_id,
+            "branch_name": db_decision.branch_name,
+            "verification_date": db_decision.verification_date,
+            "field_visit_date": db_decision.field_visit_date,
+            "manager_approval_date": db_decision.manager_approval_date
         }
     }
 

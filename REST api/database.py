@@ -23,13 +23,16 @@ SQLALCHEMY_DATABASE_URL = (
     "connection+timeout=30"
 )
 
-# Create SQLAlchemy engine
+# Create SQLAlchemy engine with optimized settings for Azure SQL
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     echo=True,
-    pool_pre_ping=True,
-    pool_recycle=3600,
-    fast_executemany=True
+    pool_pre_ping=True,  # Verify connections before using
+    pool_recycle=3600,   # Recycle connections after 1 hour
+    pool_size=5,         # Maximum number of permanent connections
+    max_overflow=10,     # Allow up to 10 additional temporary connections
+    pool_timeout=30,     # Connection timeout of 30 seconds
+    fast_executemany=True  # Optimize batch operations
 )
 
 # Create session
