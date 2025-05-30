@@ -29,11 +29,7 @@ agent logic apps/
 ├── loan_application_agent_demo.py      # Main demo application with full agent functionality
 ├── custom_agent_functions.py           # Core function implementations for banking operations
 ├── custom_agent_tools.py              # Tool definitions and schemas for the AI agent
-├── config.py                          # Configuration settings
-├── interactive_agent.py               # Basic conversation agent without tools
-├── enhanced_agent_chatbot.py          # Enhanced agent with basic tool integration
-├── user_functions.py                  # Original interest rate reduction function
-└── agent_tools.py                     # Original tool definitions
+
 ```
 
 ### Component Overview
