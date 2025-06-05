@@ -270,11 +270,9 @@ def get_working_model():
             openai_deployment_name,  # Try the configured one first
             "gpt-35-turbo", 
             "gpt-4",
-            "gpt4",
             "gpt-35",
             "gpt35",
-            "gpt-3.5-turbo",
-            "chat"
+            "gpt-3.5-turbo"
         ]
         
         # First check if any of our candidates are in the available models
@@ -461,7 +459,7 @@ def main():
             break
             
         else:
-            print("Invalid choice. Please enter 1, 2 or 3")
+            print("Invalid choice. Please enter 1, 2, 3")
 
 if __name__ == "__main__":
     try:
