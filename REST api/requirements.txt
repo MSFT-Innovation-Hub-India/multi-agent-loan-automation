@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-pydantic
-python-dotenv
-sqlalchemy
-pyodbc
-python-multipart
-gunicorn
-azure-identity
