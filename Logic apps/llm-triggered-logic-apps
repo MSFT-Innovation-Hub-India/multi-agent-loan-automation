@@ -1,0 +1,134 @@
+import requests
+import json
+from openai import AzureOpenAI
+
+# Define your Azure OpenAI endpoint and subscription key
+endpoint = "https://ai-ronakofficial14141992ai537166517119.openai.azure.com/"
+model_name = "gpt-4o-mini"
+deployment = "gpt-4o-mini"
+
+subscription_key = "Fl4K9mHabFAqqaeEgbpziq4pSK98eXiQm6PMs3r2hKA8YWMcV4WJJQQJ99BDACHYHv6XJ3w3AAAAACOGFNlv"
+api_version = "2024-12-01-preview"
+
+# Initialize the AzureOpenAI client
+client = AzureOpenAI(
+    api_version=api_version,
+    azure_endpoint=endpoint,
+    api_key=subscription_key,
+)
+
+# Logic App URL (replace with your actual Logic App URL)
+logic_app_url = "https://demo1414.azurewebsites.net:443/api/agent/triggers/When_a_HTTP_request_is_received/invoke?api-version=2022-05-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=HZ0I3n6VpNoP0Ijw691jeFXYwOcT6OtQhJopwfpYvn4"
+
+# Function to trigger the Logic App
+def trigger_logic_app(customer_id, loan_id, requested_by, reason):
+    payload = {
+        "customerId": customer_id,
+        "loanId": loan_id,
+        "requestedBy": requested_by,
+        "reason": reason
+    }
+
+    headers = {
+        "Content-Type": "application/json"
+    }
+
+    response = requests.post(logic_app_url, data=json.dumps(payload), headers=headers)
+
+    if response.status_code == 200 or response.status_code == 202:
+        print("Logic App triggered successfully.")
+        print("Response:", response.text)
+    else:
+        print(f"Failed to trigger Logic App. Status code: {response.status_code}")
+        print("Error:", response.text)
+
+# Start the conversation with an updated system message
+messages = [
+    {
+        "role": "system",
+        "content": "You are a loan assistant. Your role is to assist users with questions about loans, interest rates, and how they can apply for loans. You can provide information about different loan types, the application process, interest rates, eligibility criteria, and help users with reducing interest rates based on specific requests."
+    }
+]
+
+# Function for Intent Detection LLM (Second LLM)
+def detect_user_intent(user_input):
+    # Construct the message to ask the second LLM if the intent is to reduce interest rate
+    intent_message = f"User said: '{user_input}'.\nIs the user requesting a reduction in loan interest rates?"
+
+    # Send this message to the second LLM for intent detection
+    response = client.chat.completions.create(
+        messages=[{
+            "role": "system",
+            "content": "You are an assistant that detects if a user is asking for a loan interest rate reduction. Respond with 'yes' if they are, or 'no' if they are not."
+        }, {
+            "role": "user",
+            "content": intent_message
+        }],
+        max_tokens=20,  # We only need a 'yes' or 'no' response
+        temperature=0.5,
+        top_p=1.0,
+        model=deployment
+    )
+
+    # Analyze the response
+    bot_reply = response.choices[0].message.content.strip().lower()
+
+    if 'yes' in bot_reply:
+        return True  # The user is asking for interest rate reduction
+    else:
+        return False  # The user is not asking for interest rate reduction
+
+# Start a conversation loop
+while True:
+    # Get user input
+    user_input = input("You: ")
+
+    if user_input.lower() in ['exit', 'quit', 'bye']:  # Exit condition
+        print("Goodbye! Feel free to return if you need assistance with loans.")
+        break
+
+    # Append user message to conversation
+    messages.append({
+        "role": "user",
+        "content": user_input,
+    })
+
+    # Detect user intent using the second LLM
+    if detect_user_intent(user_input):
+        print("It sounds like you're requesting a reduction in your loan interest rate. I'll need some details to proceed.")
+        
+        # Ask for confirmation before proceeding with details collection
+        user_confirmation = input("Is that correct? (yes/no): ").strip().lower()
+
+        if user_confirmation in ['yes', 'y']:
+            # Ask for required information to trigger Logic App
+            customer_id = input("Please provide your Customer ID: ")
+            loan_id = input("Please provide your Loan ID: ")
+            requested_by = input("Please provide your name: ")
+            reason = input("Please briefly explain why you are requesting a lower interest rate (e.g., change in income, financial hardship, etc.): ")
+
+            # Trigger Logic App with the details
+            trigger_logic_app(customer_id, loan_id, requested_by, reason)
+            print("Your request has been sent for review. We will get back to you soon.")
+        else:
+            print("Okay, if you need any help with loans or rates, feel free to ask.")
+    
+    else:
+        # If not an interest rate reduction, proceed with normal conversation using the first LLM
+        response = client.chat.completions.create(
+            messages=messages,
+            max_tokens=120,  # Limit the response to around 100 words
+            temperature=1.0,
+            top_p=1.0,
+            model=deployment
+        )
+
+        # Output the bot's message
+        bot_reply = response.choices[0].message.content
+        print("Bot:", bot_reply)
+
+        # Append bot message to conversation
+        messages.append({
+            "role": "assistant",
+            "content": bot_reply,
+        })
