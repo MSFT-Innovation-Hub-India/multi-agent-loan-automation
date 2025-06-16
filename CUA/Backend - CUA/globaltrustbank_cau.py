@@ -10,8 +10,8 @@ from io import BytesIO
 
 # Azure OpenAI client
 client = AzureOpenAI(
-    api_key="Fl4K9mHabFAqqaeEgbpziq4pSK98eXiQm6PMs3r2hKA8YWMcV4WJJQQJ99BDACHYHv6XJ3w3AAAAACOGFNlv",
-    azure_endpoint="https://ai-ronakofficial14141992ai537166517119.openai.azure.com",
+    api_key="...",
+    azure_endpoint="...",
     api_version="2025-04-01-preview"
 )
 
