@@ -179,38 +179,3 @@ The application comes pre-loaded with sample data including:
 python app.py
 ```
 
-### Production
-Consider using:
-- **WSGI Server**: Gunicorn, uWSGI
-- **Web Server**: Nginx, Apache
-- **Database**: PostgreSQL, MySQL (currently using in-memory data)
-- **Container**: Docker deployment
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
-## 📝 License
-
-This project is proprietary software for Global Trust Bank.
-
-## 📞 Support
-
-For technical support or questions:
-- Email: support@globaltrustbank.com
-- Documentation: Internal wiki
-- Issue Tracker: GitHub Issues
-
-## 🔄 Version History
-
-- **v1.0.0**: Initial release with basic CRM functionality
-- **v1.1.0**: Added AI automation backend
-- **v1.2.0**: Enhanced UI and responsive design
-
----
-
-**Global Trust Bank CRM System** - Streamlining banking operations with modern technology.
