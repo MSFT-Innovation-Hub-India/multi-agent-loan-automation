@@ -469,10 +469,30 @@ def generate_ai_loan_summary(customer_data, collateral_info, loan_details, eligi
         Loan Amount: ₹{loan_details['loan_amount']:,.2f}
         Interest Rate: {loan_details['interest_rate']:.2f}%
         EMI: ₹{loan_details['emi']:,.2f}
-        Tenure: {loan_details['tenure_years']} years
-        Total Payment: ₹{loan_details['total_payment']:,.2f}
+        Tenure: {loan_details['tenure_years']} years        Total Payment: ₹{loan_details['total_payment']:,.2f}
         """
-        ai_prompt = f"""As RDJ, a senior loan officer at Global Trust Bank, provide a professional loan offer summary for this home loan application:
+        
+        # Load AI instruction template from file
+        try:
+            import os
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            instructions_file = os.path.join(current_dir, "instructions.txt")
+            
+            with open(instructions_file, 'r', encoding='utf-8') as f:
+                instruction_template = f.read()
+            
+            # Format the instruction template with actual data
+            ai_prompt = instruction_template.format(
+                customer_summary=customer_summary,
+                loan_summary=loan_summary,
+                positive_factors=', '.join(eligibility['positive_factors']),
+                risk_factors=', '.join(eligibility['risk_factors']),
+                rate_factors=chr(10).join(rate_factors)
+            )
+            
+        except FileNotFoundError:
+            # Fallback to hardcoded prompt if file not found
+            ai_prompt = f"""As RDJ, a senior loan officer at Global Trust Bank, provide a professional loan offer summary for this home loan application:
 
 {customer_summary}
 
