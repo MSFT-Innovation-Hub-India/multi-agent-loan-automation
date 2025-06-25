@@ -5,7 +5,6 @@ import base64
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
-from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
 
 from azure.storage.blob import BlobServiceClient, generate_blob_sas, BlobSasPermissions
@@ -21,44 +20,42 @@ from azure.search.documents.indexes.models import (
     SearchField,
 )
 
+# === Load Environment Variables ===
 load_dotenv()
 
-# Azure Blob Storage
-STORAGE_ACCOUNT_NAME = os.getenv("STORAGE_ACCOUNT_NAME")
-STORAGE_ACCOUNT_KEY = os.getenv("STORAGE_ACCOUNT_KEY")
-CONTAINER_NAME = os.getenv("CONTAINER_NAME")
 
-# Azure Document Intelligence
-DOC_INTEL_ENDPOINT = os.getenv("DOC_INTEL_ENDPOINT")
-DOC_INTEL_KEY = os.getenv("DOC_INTEL_KEY")
-
-# Azure OpenAI
-OPENAI_ENDPOINT = os.getenv("OPENAI_ENDPOINT")
-OPENAI_SUBSCRIPTION_KEY = os.getenv("OPENAI_SUBSCRIPTION_KEY")
-OPENAI_API_VERSION = os.getenv("OPENAI_API_VERSION")
-OPENAI_DEPLOYMENT_NAME = os.getenv("OPENAI_DEPLOYMENT_NAME")
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME")
-
-# Azure AI Search
-SEARCH_SERVICE_ENDPOINT = os.getenv("SEARCH_SERVICE_ENDPOINT")
-SEARCH_SERVICE_KEY = os.getenv("SEARCH_SERVICE_KEY")
-SEARCH_INDEX_NAME = os.getenv("SEARCH_INDEX_NAME")
+# Import configuration variables
+from .doc_index_config import (
+    STORAGE_ACCOUNT_NAME,
+    STORAGE_ACCOUNT_KEY,
+    CONTAINER_NAME,
+    DOC_INTEL_ENDPOINT,
+    DOC_INTEL_KEY,
+    OPENAI_ENDPOINT,
+    OPENAI_SUBSCRIPTION_KEY,
+    OPENAI_API_VERSION,
+    OPENAI_DEPLOYMENT_NAME,
+    EMBEDDING_MODEL_NAME,
+    SEARCH_SERVICE_ENDPOINT,
+    SEARCH_SERVICE_KEY,
+    SEARCH_INDEX_NAME
+)
 
 # === Initialize Clients ===
 document_client = DocumentIntelligenceClient(
-    endpoint=doc_intel_endpoint,
-    credential=AzureKeyCredential(doc_intel_key)
+    endpoint=DOC_INTEL_ENDPOINT,
+    credential=AzureKeyCredential(DOC_INTEL_KEY)
 )
 
 openai_client = AzureOpenAI(
-    api_version=openai_api_version,
-    azure_endpoint=openai_endpoint,
-    api_key=openai_subscription_key,
+    api_version=OPENAI_API_VERSION,
+    azure_endpoint=OPENAI_ENDPOINT,
+    api_key=OPENAI_SUBSCRIPTION_KEY,
 )
 
-search_credential = AzureKeyCredential(search_service_key)
-search_index_client = SearchIndexClient(endpoint=search_service_endpoint, credential=search_credential)
-search_client = SearchClient(endpoint=search_service_endpoint, index_name=search_index_name, credential=search_credential)
+search_credential = AzureKeyCredential(SEARCH_SERVICE_KEY)
+search_index_client = SearchIndexClient(endpoint=SEARCH_SERVICE_ENDPOINT, credential=search_credential)
+search_client = SearchClient(endpoint=SEARCH_SERVICE_ENDPOINT, index_name=SEARCH_INDEX_NAME, credential=search_credential)
 
 # === Helper Functions ===
 def clean_filename_for_key(filename):
@@ -68,23 +65,23 @@ def clean_filename_for_key(filename):
     return clean
 
 def get_all_blobs_from_container():
-    connect_str = f"DefaultEndpointsProtocol=https;AccountName={storage_account_name};AccountKey={storage_account_key};EndpointSuffix=core.windows.net"
+    connect_str = f"DefaultEndpointsProtocol=https;AccountName={STORAGE_ACCOUNT_NAME};AccountKey={STORAGE_ACCOUNT_KEY};EndpointSuffix=core.windows.net"
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-    container_client = blob_service_client.get_container_client(container_name)
+    container_client = blob_service_client.get_container_client(CONTAINER_NAME)
 
     blobs = container_client.list_blobs()
     return [blob.name for blob in blobs]
 
 def generate_sas_url(file_name):
     sas_token = generate_blob_sas(
-        account_name=storage_account_name,
-        container_name=container_name,
+        account_name=STORAGE_ACCOUNT_NAME,
+        container_name=CONTAINER_NAME,
         blob_name=file_name,
-        account_key=storage_account_key,
+        account_key=STORAGE_ACCOUNT_KEY,
         permission=BlobSasPermissions(read=True),
         expiry=datetime.now(timezone.utc) + timedelta(hours=1)
     )
-    blob_url = f"https://{storage_account_name}.blob.core.windows.net/{container_name}/{file_name}?{sas_token}"
+    blob_url = f"https://{STORAGE_ACCOUNT_NAME}.blob.core.windows.net/{CONTAINER_NAME}/{file_name}?{sas_token}"
     return blob_url
 
 def analyze_document_from_url(blob_url):
@@ -121,18 +118,18 @@ def chunk_text(text, max_tokens=500):
 def get_embedding(text):
     response = openai_client.embeddings.create(
         input=[text],
-        model=embedding_model_name
+        model=EMBEDDING_MODEL_NAME
     )
     return np.array(response.data[0].embedding)
 
 def create_search_index():
     try:
-        search_index_client.get_index(search_index_name)
-        print(f"✅ Search index '{search_index_name}' already exists. Deleting to recreate...")
-        search_index_client.delete_index(search_index_name)
+        search_index_client.get_index(SEARCH_INDEX_NAME)
+        print(f"✅ Search index '{SEARCH_INDEX_NAME}' already exists. Deleting to recreate...")
+        search_index_client.delete_index(SEARCH_INDEX_NAME)
         print("🗑️ Old index deleted.")
     except:
-        print(f"ℹ️ Creating new search index '{search_index_name}'...")
+        print(f"ℹ️ Creating new search index '{SEARCH_INDEX_NAME}'...")
 
     fields = [
         SimpleField(name="id", type=SearchFieldDataType.String, key=True),
@@ -141,9 +138,9 @@ def create_search_index():
         SimpleField(name="embedding_str", type=SearchFieldDataType.String)
     ]
     
-    index = SearchIndex(name=search_index_name, fields=fields)
+    index = SearchIndex(name=SEARCH_INDEX_NAME, fields=fields)
     search_index_client.create_or_update_index(index)
-    print(f"✅ Index '{search_index_name}' created.")
+    print(f"✅ Index '{SEARCH_INDEX_NAME}' created.")
 
 def upload_to_search_index(chunks, embeddings, file_name):
     clean_file_name = clean_filename_for_key(file_name)
