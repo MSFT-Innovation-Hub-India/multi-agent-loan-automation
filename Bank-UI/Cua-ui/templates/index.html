@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Trust Bank - Customer Lookup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <h1>Global Trust Bank</h1>
+            <p class="tagline">AI - First Bank</p>
+            <p class="subtitle">AI-powered, Customer Focused</p>
+        </div>
+    </header>
+
+    <main class="main-container">
+        <div class="lookup-container">
+            <h2>Customer Lookup System</h2>
+            
+            <!-- Step 1: Customer ID Input -->
+            <div id="step1" class="step active">
+                <h3>Enter Customer ID</h3>
+                <div class="input-group">
+                    <label for="customerId">Customer ID:</label>
+                    <input type="text" id="customerId" placeholder="e.g., CUST0001" />
+                </div>
+                <button id="nextStep1" class="btn btn-primary">Next</button>
+            </div>
+
+            <!-- Step 2: Credentials Input -->
+            <div id="step2" class="step">
+                <h3>CRM System Login</h3>
+                <div class="input-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" placeholder="Enter your username" />
+                </div>
+                <div class="input-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" placeholder="Enter your password" />
+                </div>
+                <div class="button-group">
+                    <button id="backStep1" class="btn btn-secondary">Back</button>
+                    <button id="startLookup" class="btn btn-primary">Start Lookup</button>
+                </div>
+            </div>
+
+            <!-- Step 3: Processing and Results -->
+            <div id="step3" class="step">
+                <h3>Processing Request</h3>
+                <div id="loadingSection" class="loading-section">
+                    <div class="spinner"></div>
+                    <p id="statusMessage">Initializing agent...</p>
+                </div>
+
+                <div id="resultsSection" class="results-section" style="display: none;">
+                    <h4>Lookup Results</h4>
+                    <div class="result-card">
+                        <div class="result-item">
+                            <label>Customer ID:</label>
+                            <span id="resultCustomerId"></span>
+                        </div>
+                        <div class="result-item">
+                            <label>CRM Reference Number:</label>
+                            <span id="resultCrmRef" class="crm-ref"></span>
+                        </div>
+                    </div>
+                    <button id="newLookup" class="btn btn-primary">New Lookup</button>
+                </div>
+
+                <div id="errorSection" class="error-section" style="display: none;">
+                    <h4>Error</h4>
+                    <p id="errorMessage"></p>
+                    <button id="retryLookup" class="btn btn-primary">Retry</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 Global Trust Bank. All rights reserved.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
