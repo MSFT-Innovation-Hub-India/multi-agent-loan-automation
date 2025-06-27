@@ -11,7 +11,7 @@ from azure.cosmos import CosmosClient, exceptions
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # CosmosDB Configuration
-COSMOS_URI = "https://globaltrustbank.documents.azure.com:443/"
+COSMOS_URI = ""
 COSMOS_KEY = ""
 DATABASE_NAME = "LoanProcessingDB"
 CONTAINER_NAME = "AgentLogs"
