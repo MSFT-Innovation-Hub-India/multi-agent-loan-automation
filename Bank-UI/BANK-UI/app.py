@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # CosmosDB Configuration
 COSMOS_URI = "https://globaltrustbank.documents.azure.com:443/"
-COSMOS_KEY = "EPcG6JzbLnWUNyIGZRSvCLiAypzsU3GBqEO8E7ZlqKVwRLHXHKrkniFMKFfwCJc8qS3jfdlmJVhFACDb8bHG5Q=="
+COSMOS_KEY = ""
 DATABASE_NAME = "LoanProcessingDB"
 CONTAINER_NAME = "AgentLogs"
 
