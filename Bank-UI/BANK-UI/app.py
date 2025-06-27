@@ -11,14 +11,13 @@ from azure.cosmos import CosmosClient, exceptions
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # CosmosDB Configuration
-COSMOS_URI = ""
-COSMOS_KEY = ""
+
 DATABASE_NAME = "LoanProcessingDB"
 CONTAINER_NAME = "AgentLogs"
 
 # Initialize Cosmos client
 try:
-    cosmos_client = CosmosClient(COSMOS_URI, COSMOS_KEY)
+    # cosmos_client = CosmosClient(COSMOS_URI, COSMOS_KEY)
     cosmos_database = cosmos_client.get_database_client(DATABASE_NAME)
     cosmos_container = cosmos_database.get_container_client(CONTAINER_NAME)
     print("✅ CosmosDB connection established successfully")
