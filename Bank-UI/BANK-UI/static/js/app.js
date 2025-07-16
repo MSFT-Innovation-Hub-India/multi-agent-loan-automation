@@ -17,6 +17,46 @@ class BankingAgentSystem {
         this.initializeEventListeners();
         this.loadApplications();
         this.updateConnectionStatus('Connected', 'success');
+        
+        // Check for application ID and customer ID in URL parameters
+        this.checkUrlParameters();
+    }
+    
+    checkUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const applicationId = urlParams.get('application_id');
+        const customerId = urlParams.get('customer_id');
+        
+        if (applicationId && customerId) {
+            console.log(`Loading application from URL parameters: ${applicationId}, Customer: ${customerId}`);
+            this.loadApplicationFromUrl(applicationId, customerId);
+        }
+    }
+    
+    async loadApplicationFromUrl(applicationId, customerId) {
+        try {
+            // Show loading state
+            this.updateUIState('loading', 'Loading application...');
+            
+            // Search for application by ID and customer ID
+            const response = await fetch(`/api/applications/search?application_id=${applicationId}&customer_id=${customerId}&search_type=both`);
+            const data = await response.json();
+            
+            if (data.success && data.application) {
+                console.log('Application loaded successfully from URL parameters:', data.application.id);
+                this.loadApplicationData(data.application);
+                
+                // Clean up the URL without reloading the page
+                window.history.replaceState({}, document.title, '/');
+            } else {
+                this.showNotification('Application not found', 'error');
+                this.updateUIState('idle');
+            }
+        } catch (error) {
+            console.error('Error loading application from URL:', error);
+            this.showNotification('Failed to load application', 'error');
+            this.updateUIState('idle');
+        }
     }
     
     // Removed socket initialization for now - using HTTP requests instead
@@ -29,11 +69,7 @@ class BankingAgentSystem {
         
         // Modal events - close when clicking outside
         window.onclick = (event) => {
-            // Handle get application modal
-            const getAppModal = document.getElementById('getApplicationModal');
-            if (event.target === getAppModal) {
-                this.closeModal('getApplicationModal');
-            }
+            // Modal handling code for future modals
         };
         
         // Escape key to close modals
@@ -241,8 +277,8 @@ class BankingAgentSystem {
         this.currentApplication = this.applications.find(app => app.id === applicationId);
         
         if (this.currentApplication) {
-            // Set workflow progress to 45%
-            this.updateWorkflowProgress(45);
+            // Set workflow progress to 96%
+            this.updateWorkflowProgress(96);
             this.populateWorkflowCategories(this.currentApplication);
             this.populateChatMessages(this.currentApplication.messages || []);
             this.updateApplicationStatus();
@@ -276,27 +312,30 @@ class BankingAgentSystem {
         }
     }
 
-    updateApplicationStatus() {
+    updateApplicationStatus(application) {
         const statusContainer = document.getElementById('applicationStatus');
-        if (statusContainer && this.currentApplication) {
+        // Use provided application or fall back to currentApplication
+        const app = application || this.currentApplication;
+        
+        if (statusContainer && app) {
             statusContainer.innerHTML = `
                 <div class="app-status-card">
                     <div class="status-header">
-                        <h4>${this.currentApplication.customer_id}</h4>
-                        <span class="status-badge ${this.currentApplication.status}">${this.currentApplication.status}</span>
+                        <h4>${app.customer_id}</h4>
+                        <span class="status-badge ${app.status}">${app.status}</span>
                     </div>
                     <div class="status-details">
                         <div class="detail-item">
                             <span class="label">Application ID:</span>
-                            <span class="value">${this.currentApplication.id}</span>
+                            <span class="value">${app.id}</span>
                         </div>
                         <div class="detail-item">
                             <span class="label">Created:</span>
-                            <span class="value">${new Date(this.currentApplication.created_at).toLocaleDateString()}</span>
+                            <span class="value">${new Date(app.created_at).toLocaleDateString()}</span>
                         </div>
                         <div class="detail-item">
                             <span class="label">Priority:</span>
-                            <span class="value priority-${this.currentApplication.priority || 'normal'}">${this.currentApplication.priority || 'normal'}</span>
+                            <span class="value priority-${app.priority || 'normal'}">${app.priority || 'normal'}</span>
                         </div>
                     </div>
                 </div>
@@ -363,6 +402,9 @@ class BankingAgentSystem {
             
             // Show welcome message for the agent
             this.addAgentWelcomeMessage(agent);
+            
+            // Show quick suggestions for the agent
+            this.showQuickSuggestions(agentKey);
             
             this.showNotification(`Connected to ${agent.name}`, 'success');
         }
@@ -441,11 +483,6 @@ class BankingAgentSystem {
         
         if (!message) return;
         
-        if (!this.currentApplication) {
-            this.showNotification('Please select an application first', 'warning');
-            return;
-        }
-        
         if (!this.currentAgent) {
             this.showNotification('Please select an agent first', 'warning');
             return;
@@ -474,6 +511,12 @@ class BankingAgentSystem {
         this.showTypingIndicator();
         
         try {
+            if (!this.currentApplication) {
+                this.showNotification('No application data loaded', 'warning');
+                this.removeTypingIndicator();
+                return;
+            }
+
             // Send message to server via HTTP
             const response = await fetch('/api/send_message', {
                 method: 'POST',
@@ -560,13 +603,40 @@ class BankingAgentSystem {
     }
     
     formatMessage(content) {
-        // Convert line breaks and format the message
-        return content
-            .replace(/\n/g, '<br>')
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/`(.*?)`/g, '<code>$1</code>')
-            .replace(/₹([\d,]+\.?\d*)/g, '<span class="currency">₹$1</span>');
+        // Check if the content already contains HTML table
+        if (content.includes('<table class="agent-logs-table">')) {
+            // For content with HTML tables, only format markdown outside of HTML tags
+            let isInsideHtmlTag = false;
+            const parts = content.split(/(<[^>]*>)/);
+            
+            return parts.map(part => {
+                if (part.startsWith('<')) {
+                    isInsideHtmlTag = !part.startsWith('</') && !part.endsWith('/>');
+                    return part; // Return HTML tags as they are
+                } else if (part.endsWith('>')) {
+                    isInsideHtmlTag = false;
+                    return part; // Return HTML tags as they are
+                } else if (!isInsideHtmlTag) {
+                    // Apply markdown formatting only to non-HTML content
+                    return part
+                        .replace(/\n/g, '<br>')
+                        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                        .replace(/`(.*?)`/g, '<code>$1</code>')
+                        .replace(/₹([\d,]+\.?\d*)/g, '<span class="currency">₹$1</span>');
+                } else {
+                    return part; // Return content inside HTML tags as it is
+                }
+            }).join('');
+        } else {
+            // For regular content without HTML, apply all formatting
+            return content
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/`(.*?)`/g, '<code>$1</code>')
+                .replace(/₹([\d,]+\.?\d*)/g, '<span class="currency">₹$1</span>');
+        }
     }
     
     showTypingIndicator() {
@@ -659,7 +729,8 @@ class BankingAgentSystem {
 
     showAuditTrail() {
         if (!this.currentApplication) {
-            this.showNotification('Please select an application first', 'warning');
+            // If there's no application, show a more friendly message
+            this.showNotification('No application data loaded', 'info');
             return;
         }
         
@@ -686,85 +757,8 @@ class BankingAgentSystem {
         
         document.body.appendChild(modal);
         modal.style.display = 'block';
-    }
-
-    openGetApplicationModal() {
-        const modal = document.getElementById('getApplicationModal');
-        if (modal) {
-            modal.style.display = 'flex';
-            modal.classList.add('show');
-            
-            // Focus on the input field
-            setTimeout(() => {
-                const input = document.getElementById('customerIdInput');
-                if (input) {
-                    input.focus();
-                }
-            }, 100);
-        }
-    }
-
-    async submitGetApplication(event) {
-        event.preventDefault();
-        
-        const form = event.target;
-        const customerId = form.customerId.value.trim();
-        
-        if (!customerId) {
-            this.showNotification('Please enter a Customer ID', 'warning');
-            return;
-        }
-
-        // Find the submit button in the modal footer
-        const submitBtn = document.querySelector('button[form="getApplicationForm"]');
-        let originalText = 'Search Application';
-        
-        if (submitBtn) {
-            originalText = submitBtn.innerHTML;
-        }
-        
-        try {
-            // Show loading state
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Searching...';
-            }
-
-            // Search for application by customer ID
-            const response = await fetch(`/api/applications/search?customer_id=${encodeURIComponent(customerId)}`);
-            const data = await response.json();
-            
-            if (response.ok && data.success) {
-                this.showNotification(`Application found for Customer ${customerId}`, 'success');
-                this.closeModal('getApplicationModal');
-                
-                // Load the found application
-                this.currentApplication = data.application;
-                
-                // Update the application selector
-                this.updateApplicationSelector(data.application);
-                
-                // Populate the application data
-                this.loadApplicationData(data.application);
-                
-                // Clear the form
-                form.reset();
-                
-            } else {
-                this.showNotification(data.error || `No application found for Customer ${customerId}`, 'error');
-            }
-            
-        } catch (error) {
-            console.error('Error searching application:', error);
-            this.showNotification('Failed to search application. Please try again.', 'error');
-        } finally {
-            // Reset button
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
-        }
-    }
+    }    // Methods for getting application data are now handled through the applications page
+    // and the dashboard-integration.js functionality
 
     updateApplicationSelector(application) {
         const appSelect = document.getElementById('applicationSelect');
@@ -782,11 +776,14 @@ class BankingAgentSystem {
     }
 
     loadApplicationData(application) {
+        // Set the current application
+        this.currentApplication = application;
+
         // Update application status panel
         this.updateApplicationStatus(application);
         
         // Update workflow progress
-        this.updateWorkflowProgress(application.overall_progress || 45);
+        this.updateWorkflowProgress(application.overall_progress || 96);
         
         // Load messages if any
         if (application.messages && application.messages.length > 0) {
@@ -795,6 +792,9 @@ class BankingAgentSystem {
         
         // Update overall progress
         this.updateOverallProgress(application);
+
+        // Set the UI state to application_loaded
+        this.updateUIState('application_loaded');
     }
 
     showNotification(message, type = 'info') {
@@ -842,97 +842,161 @@ class BankingAgentSystem {
             sidebar.classList.toggle('collapsed');
         }
     }
-}
 
-// Global functions for HTML onclick events
-function toggleAgentCategory(categoryKey) {
-    const category = document.querySelector(`#agents-${categoryKey}`);
-    if (category) {
-        const isExpanded = category.style.display !== 'none';
-        category.style.display = isExpanded ? 'none' : 'block';
+    updateUIState(state, message = '') {
+        const loadingOverlay = document.getElementById('loadingOverlay');
         
-        // Update the icon
-        const headerElement = category.closest('.agent-category').querySelector('.category-header i');
-        if (headerElement) {
-            headerElement.className = isExpanded ? 'fas fa-chevron-right' : 'fas fa-chevron-down';
+        switch (state) {
+            case 'loading':
+                // Show loading overlay with message
+                if (loadingOverlay) {
+                    const loadingText = loadingOverlay.querySelector('.loading-text');
+                    if (loadingText) {
+                        loadingText.textContent = message || 'Loading...';
+                    }
+                    loadingOverlay.style.display = 'flex';
+                }
+                break;
+                
+            case 'idle':
+            case 'application_loaded':
+                // Hide loading overlay
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+                
+                // For application_loaded, update UI elements to reflect loaded state
+                if (state === 'application_loaded') {
+                    // Enable agent selection
+                    const agentContainer = document.querySelector('.agent-list');
+                    if (agentContainer) {
+                        agentContainer.classList.remove('disabled');
+                    }
+                    
+                    // Update the chat interface to show it's ready
+                    const chatInterface = document.getElementById('chatInterface');
+                    if (chatInterface) {
+                        chatInterface.classList.add('application-loaded');
+                    }
+                    
+                    // Show application info
+                    const appInfo = document.getElementById('applicationInfo');
+                    if (appInfo) {
+                        appInfo.style.display = 'block';
+                    }
+                    
+                    // If we have a current application, update the UI with its details
+                    if (this.currentApplication) {
+                        this.updateApplicationStatus(this.currentApplication);
+                        this.updateOverallProgress(this.currentApplication);
+                    }
+                }
+                break;
+                
+            default:
+                // Default is to hide loading overlay
+                if (loadingOverlay) {
+                    loadingOverlay.style.display = 'none';
+                }
+                break;
         }
     }
-}
-
-function toggleAllAgents() {
-    window.bankingSystem.toggleAgentPanel();
-}
-
-function exportChat() {
-    if (!window.bankingSystem.currentApplication) {
-        window.bankingSystem.showNotification('No application selected to export', 'warning');
-        return;
+    
+    showQuickSuggestions(agentKey) {
+        const suggestionsContainer = document.getElementById('quickSuggestions');
+        const buttonsContainer = document.getElementById('suggestionsButtons');
+        
+        if (!suggestionsContainer || !buttonsContainer) return;
+        
+        // Define suggestions for each agent type
+        const suggestions = {
+            'document_checker': [
+                { text: 'Get the details', icon: 'fas fa-info-circle', class: 'primary-action' },
+                { text: 'Show me the updates', icon: 'fas fa-sync-alt', class: '' },
+                { text: 'Send the mail for missing documents', icon: 'fas fa-envelope', class: 'email-action' }
+            ],
+            'default': [
+                { text: 'Get the details', icon: 'fas fa-info-circle', class: 'primary-action' },
+                { text: 'Show me updates', icon: 'fas fa-sync-alt', class: '' },
+                { text: 'Let\'s look on the updates', icon: 'fas fa-search', class: '' }
+            ]
+        };
+        
+        // Get suggestions for the current agent or use default
+        const agentSuggestions = suggestions[agentKey] || suggestions['default'];
+        
+        // Clear previous suggestions
+        buttonsContainer.innerHTML = '';
+        
+        // Create suggestion buttons
+        agentSuggestions.forEach(suggestion => {
+            const button = document.createElement('button');
+            button.className = `suggestion-btn ${suggestion.class}`;
+            button.innerHTML = `
+                <i class="${suggestion.icon}"></i>
+                ${suggestion.text}
+            `;
+            button.onclick = () => this.useSuggestion(suggestion.text);
+            buttonsContainer.appendChild(button);
+        });
+        
+        // Show the suggestions container
+        suggestionsContainer.style.display = 'block';
     }
     
-    // Simple export functionality
-    const messages = Array.from(document.querySelectorAll('.message')).map(msg => {
-        const isUser = msg.classList.contains('user');
-        const content = msg.querySelector('.message-text')?.textContent || '';
-        const time = msg.querySelector('.message-time')?.textContent || '';
-        const agent = msg.querySelector('.agent-name')?.textContent || 'User';
-        
-        return `[${time}] ${isUser ? 'User' : agent}: ${content}`;
-    }).join('\n');
+    hideQuickSuggestions() {
+        const suggestionsContainer = document.getElementById('quickSuggestions');
+        if (suggestionsContainer) {
+            suggestionsContainer.style.display = 'none';
+        }
+    }
     
-    const blob = new Blob([messages], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `chat-export-${window.bankingSystem.currentApplication.id}-${new Date().toISOString().split('T')[0]}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    window.bankingSystem.showNotification('Chat exported successfully', 'success');
-}
-
-function toggleChatSettings() {
-    window.bankingSystem.showNotification('Chat settings coming soon!', 'info');
-}
-
-function selectAgent(agentKey) {
-    window.bankingSystem.selectAgent(agentKey);
-}
-
-function switchApplication() {
-    window.bankingSystem.switchApplication();
-}
-
-function switchAgent() {
-    window.bankingSystem.switchAgent();
-}
-
-function clearChat() {
-    window.bankingSystem.clearChat();
-}
-
-function openGetApplicationModal() {
-    window.bankingSystem.openGetApplicationModal();
-}
-
-function submitGetApplication(event) {
-    window.bankingSystem.submitGetApplication(event);
-}
-
-function closeModal(modalId) {
-    window.bankingSystem.closeModal(modalId);
-}
-
-function showAuditTrail() {
-    window.bankingSystem.showAuditTrail();
-}
-
-function toggleAgentPanel() {
-    window.bankingSystem.toggleAgentPanel();
+    useSuggestion(text) {
+        const messageInput = document.getElementById('messageInput');
+        if (messageInput) {
+            messageInput.value = text;
+            messageInput.focus();
+            
+            // Optionally, auto-send the suggestion
+            this.sendMessage();
+        }
+    }
 }
 
 // Initialize the system when page loads
 document.addEventListener('DOMContentLoaded', () => {
     window.bankingSystem = new BankingAgentSystem();
 });
+
+// Global function to select an agent - calls the class method
+function selectAgent(agentKey) {
+    if (window.bankingSystem) {
+        window.bankingSystem.selectAgent(agentKey);
+    }
+}
+
+// Global function to toggle agent category
+function toggleAgentCategory(categoryKey) {
+    const categoryElement = document.querySelector(`#agents-${categoryKey}`).closest('.agent-category');
+    if (categoryElement) {
+        categoryElement.classList.toggle('expanded');
+        const icon = categoryElement.querySelector('.category-header i');
+        if (icon) {
+            icon.classList.toggle('fa-chevron-up');
+            icon.classList.toggle('fa-chevron-down');
+        }
+    }
+}
+
+// Global function to toggle category in workflow
+function toggleCategory(categoryKey) {
+    const categoryElement = document.querySelector(`.category-section.${categoryKey.toLowerCase().replace('_', '-')}`);
+    if (categoryElement) {
+        categoryElement.classList.toggle('expanded');
+        const icon = categoryElement.querySelector('.category-header i');
+        if (icon) {
+            icon.classList.toggle('fa-chevron-up');
+            icon.classList.toggle('fa-chevron-down');
+        }
+    }
+}

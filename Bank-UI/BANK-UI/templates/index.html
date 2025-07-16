@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Global Trust Bank - Digital Banking Hub</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/agent-logs.css') }}">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
@@ -18,8 +19,8 @@
                     <div class="brand-text">
                         <h1>Global Trust Bank</h1>
                         <div class="brand-subtitle">
-                            <span>AI First BANK</span>
-                            <span>AI-Driven. Customer-Focused.</span>
+                            <span>AI First Bank</span>
+                            <span>AI driven,customer focused.</span>
                         </div>
                     </div>
                 </div>
@@ -33,10 +34,10 @@
                     </select>
                 </div>
             </div>            <div class="header-actions">
-                <button class="action-btn primary" onclick="openGetApplicationModal()">
-                    <i class="fas fa-search"></i>
-                    <span>Get Application</span>
-                </button>
+                <a href="/applications" class="action-btn">
+                    <i class="fas fa-list"></i>
+                    <span>Applications</span>
+                </a>
                 <button class="action-btn secondary" onclick="window.open('http://127.0.0.1:8080', '_blank')">
                     <i class="fas fa-external-link-alt"></i>
                     <span>Get CRM Ref Number</span>
@@ -105,8 +106,8 @@
                             <i class="fas fa-robot"></i>
                         </div>
                         <div class="agent-info">
-                            <h4>Select an Agent</h4>
-                            <span>Choose an agent to start conversation</span>
+                            <h4>Select the Agent</h4>
+                            <span>Click the Customer Service Agent to get started</span>
                         </div>
                     </div>
                     
@@ -127,13 +128,19 @@
                             <i class="fas fa-hand-wave"></i>
                         </div>
                         <h3>Welcome to Global Trust Bank Digital Hub</h3>
-                        <p>Select an application and choose a team member to begin monitoring the loan processing workflow.</p>                        <div class="quick-actions">
-                            <button class="quick-btn" onclick="openGetApplicationModal()">
-                                <i class="fas fa-search"></i> Get Application
-                            </button>
-                        </div>
+                        <p>Click the Customer Service Agent to get started</p>
                     </div>
                 </div>                <div class="chat-input-area">
+                    <!-- Quick Suggestions -->
+                    <div class="quick-suggestions" id="quickSuggestions" style="display: none;">
+                        <div class="suggestions-header">
+                            <span>Quick Actions:</span>
+                        </div>
+                        <div class="suggestions-buttons" id="suggestionsButtons">
+                            <!-- Suggestions will be populated here based on selected agent -->
+                        </div>
+                    </div>
+                    
                     <form id="chatForm">
                         <div class="input-container">
                             <div class="input-wrapper">
@@ -163,45 +170,6 @@
         <div class="notification-system" id="notificationSystem"></div>
     </div>    <!-- Enhanced Modals -->
 
-    <!-- Get Application Modal -->
-    <div class="modal-overlay" id="getApplicationModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3><i class="fas fa-search"></i> Get Application</h3>
-                <button class="modal-close" onclick="closeModal('getApplicationModal')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="getApplicationForm" onsubmit="submitGetApplication(event)">
-                    <div class="form-group">
-                        <label for="customerIdInput">
-                            <i class="fas fa-user"></i>
-                            Customer ID
-                        </label>
-                        <input 
-                            type="text" 
-                            id="customerIdInput" 
-                            name="customerId"
-                            placeholder="Enter Customer ID (e.g., CUST0001)" 
-                            required
-                            autocomplete="off"
-                        >
-                        <small style="color: #6b7280; font-size: 0.875rem;">Enter the Customer ID to search for their loan application</small>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn-secondary" onclick="closeModal('getApplicationModal')">
-                    <i class="fas fa-times"></i>
-                    Cancel
-                </button>
-                <button type="submit" form="getApplicationForm" class="btn-primary">
-                    <i class="fas fa-search"></i>
-                    Search Application
-                </button>
-            </div>
-        </div>
-    </div>
-
     <!-- Audit Trail Modal -->
     <div class="modal-overlay" id="auditModal">
         <div class="modal-content">
@@ -217,5 +185,12 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/dashboard-integration.js') }}"></script>
+    
+    <script>
+        // Initialize the banking system
+        const bankingSystem = new BankingAgentSystem();
+        window.bankingSystem = bankingSystem;
+    </script>
 </body>
 </html>

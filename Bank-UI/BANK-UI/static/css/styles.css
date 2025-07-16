@@ -168,6 +168,53 @@ body {
     gap: 1rem;
 }
 
+/* Action Button Styles */
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    text-decoration: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+}
+
+.action-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: white;
+    text-decoration: none;
+}
+
+.action-btn.secondary {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.action-btn.secondary:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.25);
+}
+
+.action-btn i {
+    font-size: 1rem;
+    opacity: 0.9;
+}
+
+.action-btn span {
+    font-weight: 500;
+}
+
 .user-profile {
     display: flex;
     align-items: center;
@@ -301,6 +348,18 @@ body {
     background: #f1f5f9;
 }
 
+.category-header i {
+    font-size: 1rem;
+    color: #6b7280;
+    transition: all 0.3s ease;
+    min-width: 16px;
+    display: inline-block;
+}
+
+.category-header:hover i {
+    color: #374151;
+}
+
 .category-info {
     display: flex;
     flex-direction: column;
@@ -322,6 +381,12 @@ body {
 .agent-list {
     margin-top: 0.5rem;
     display: block;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.agent-category:not(.expanded) .agent-list {
+    display: none;
 }
 
 .agent-item {
@@ -1087,260 +1152,88 @@ body {
     display: flex;
 }
 
-/* ========================================
-   DEDICATED GET APPLICATION MODAL CSS
-   ======================================== */
-
-/* Get Application Modal - Isolated Styling */
-#getApplicationModal.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(5px);
-    display: none;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    animation: fadeIn 0.3s ease;
-}
-
-#getApplicationModal.modal-overlay.show {
-    display: flex !important;
-    opacity: 1;
-}
-
-#getApplicationModal .modal-content {
-    background: white;
-    border-radius: 16px;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
-    max-width: 520px;
-    width: 90%;
-    max-height: 80vh;
-    overflow: hidden;
-    position: relative;
-    transform: scale(1);
-    opacity: 1;
-    animation: modalSlideIn 0.4s ease-out;
-}
-
-@keyframes modalSlideIn {
-    from {
-        transform: scale(0.9) translateY(-20px);
-        opacity: 0;
-    }
-    to {
-        transform: scale(1) translateY(0);
-        opacity: 1;
-    }
-}
-
-#getApplicationModal .modal-header {
-    background: linear-gradient(135deg, #1e40af, #3b82f6);
-    color: white;
-    padding: 2rem 2rem 1.5rem 2rem;
-    position: relative;
-    border-radius: 16px 16px 0 0;
-}
-
-#getApplicationModal .modal-header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-    border-radius: 16px 16px 0 0;
-}
-
-#getApplicationModal .modal-header h3 {
-    margin: 0;
-    font-size: 1.4rem;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    position: relative;
-    z-index: 1;
-}
-
-#getApplicationModal .modal-header h3 i {
-    font-size: 1.2rem;
-    opacity: 0.9;
-}
-
-#getApplicationModal .modal-close {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 1.5rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-    line-height: 1;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
-    z-index: 2;
-}
-
-#getApplicationModal .modal-close:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: scale(1.1);
-}
-
-#getApplicationModal .modal-body {
-    padding: 2.5rem 2rem 1.5rem 2rem;
-    background: #fafbfc;
-}
-
-#getApplicationModal .form-group {
-    margin-bottom: 0;
-    position: relative;
-}
-
-#getApplicationModal .form-group label {
-    display: block;
-    margin-bottom: 0.75rem;
-    font-weight: 600;
-    color: #1f2937;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-#getApplicationModal .form-group label i {
-    color: #3b82f6;
-    font-size: 1rem;
-}
-
-#getApplicationModal .form-group input {
-    width: 100%;
-    padding: 1rem 1.25rem;
-    border: 2px solid #e5e7eb;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-family: 'Inter', sans-serif;
-    transition: all 0.3s ease;
-    box-sizing: border-box;
-    background: white;
-    color: #1f2937;
-}
-
-#getApplicationModal .form-group input:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
-    transform: translateY(-1px);
-}
-
-#getApplicationModal .form-group input::placeholder {
-    color: #9ca3af;
-    font-style: italic;
-}
-
-#getApplicationModal .form-group small {
-    display: block;
-    margin-top: 0.5rem;
-    color: #6b7280 !important;
-    font-size: 0.875rem !important;
-    line-height: 1.4;
-}
-
-#getApplicationModal .modal-footer {
-    padding: 1.5rem 2rem 2rem 2rem;
-    background: white;
+/* Quick Suggestions Styling */
+.quick-suggestions {
+    padding: 1rem;
+    background: #f8fafc;
     border-top: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-    border-radius: 0 0 16px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    margin-bottom: 0;
 }
 
-#getApplicationModal .modal-footer button {
-    padding: 0.875rem 1.75rem;
-    border: none;
-    border-radius: 10px;
+.suggestions-header {
+    font-size: 0.875rem;
     font-weight: 600;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: all 0.3s ease;
+    color: #374151;
+    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-family: 'Inter', sans-serif;
 }
 
-#getApplicationModal .modal-footer .btn-primary {
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+.suggestions-header span {
+    color: #6b7280;
 }
 
-#getApplicationModal .modal-footer .btn-primary:hover {
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+.suggestions-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 
-#getApplicationModal .modal-footer .btn-primary:active {
-    transform: translateY(0);
-}
-
-#getApplicationModal .modal-footer .btn-secondary {
-    background: #f3f4f6;
-    color: #4b5563;
+.suggestion-btn {
+    padding: 0.5rem 1rem;
+    background: white;
     border: 1px solid #d1d5db;
-}
-
-#getApplicationModal .modal-footer .btn-secondary:hover {
-    background: #e5e7eb;
+    border-radius: 20px;
     color: #374151;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.suggestion-btn:hover {
+    background: #f3f4f6;
+    border-color: #9ca3af;
     transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-#getApplicationModal .modal-footer button i {
-    font-size: 0.9rem;
+.suggestion-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-/* Responsive design for Get Application Modal */
-@media (max-width: 768px) {
-    #getApplicationModal .modal-content {
-        max-width: 95%;
-        margin: 1rem;
-    }
-    
-    #getApplicationModal .modal-header {
-        padding: 1.5rem 1.5rem 1rem 1.5rem;
-    }
-    
-    #getApplicationModal .modal-header h3 {
-        font-size: 1.2rem;
-    }
-    
-    #getApplicationModal .modal-body {
-        padding: 2rem 1.5rem 1rem 1.5rem;
-    }
-    
-    #getApplicationModal .modal-footer {
-        padding: 1rem 1.5rem 1.5rem 1.5rem;
-        flex-direction: column;
-    }
-    
-    #getApplicationModal .modal-footer button {
-        width: 100%;
-        justify-content: center;
-    }
+.suggestion-btn i {
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+.suggestion-btn.email-action {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white;
+    border-color: #dc2626;
+}
+
+.suggestion-btn.email-action:hover {
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    border-color: #b91c1c;
+}
+
+.suggestion-btn.primary-action {
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    color: white;
+    border-color: #2563eb;
+}
+
+.suggestion-btn.primary-action:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border-color: #1d4ed8;
 }
 
 /* Prevent horizontal overflow */

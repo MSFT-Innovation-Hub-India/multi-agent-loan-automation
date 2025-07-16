@@ -5,19 +5,34 @@ import datetime
 import json
 import sys
 import os
+import requests
 from azure.cosmos import CosmosClient, exceptions
 
-# Add the parent directory to Python path to import the underwriting agent
+# Add the parent directory to Python path to import the Underwriting agent
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# CosmosDB Configuration
+# Agent workflow order for guidance messages
+AGENT_WORKFLOW_ORDER = [
+    ('application_assist', 'Customer Service Agent', 'Loan Documentation Agent'),
+    ('document_checker', 'Loan Documentation Agent', 'Credit Liability Agent'),
+    ('pre_qualification', 'Credit Liability Agent', 'Credit Risk and Underwriting Agent'),
+    ('Underwriting', 'Credit Risk and Underwriting Agent', 'Credit Appraisal Agent'),
+    ('credit_assessor', 'Credit Appraisal Agent', 'Property Valuation Agent'),
+    ('valuation', 'Property Valuation Agent', 'Audit Agent'),
+    ('audit', 'Audit Agent', 'Customer Relationship Agent'),
+    ('customer_communication', 'Customer Relationship Agent', 'Offer Generation Agent'),
+    ('offer_generation', 'Offer Generation Agent', None)  # Last agent in workflow
+]
 
+# CosmosDB Configuration
+COSMOS_URI = "https://globaltrustbank.documents.azure.com:443/"
+COSMOS_KEY = "EPcG6JzbLnWUNyIGZRSvCLiAypzsU3GBqEO8E7ZlqKVwRLHXHKrkniFMKFfwCJc8qS3jfdlmJVhFACDb8bHG5Q=="
 DATABASE_NAME = "LoanProcessingDB"
 CONTAINER_NAME = "AgentLogs"
 
 # Initialize Cosmos client
 try:
-    # cosmos_client = CosmosClient(COSMOS_URI, COSMOS_KEY)
+    cosmos_client = CosmosClient(COSMOS_URI, COSMOS_KEY)
     cosmos_database = cosmos_client.get_database_client(DATABASE_NAME)
     cosmos_container = cosmos_database.get_container_client(CONTAINER_NAME)
     print("✅ CosmosDB connection established successfully")
@@ -26,6 +41,39 @@ except Exception as e:
     cosmos_client = None
     cosmos_database = None
     cosmos_container = None
+
+def normalize_agent_name(agent_name):
+    """Normalize agent names from CosmosDB format to match the expected format"""
+    # Handle the case where agent name might be in lowercase or different format
+    if not agent_name:
+        return agent_name
+        
+    agent_name_lower = agent_name.lower()
+    
+    if agent_name_lower == 'underwriting agent':
+        return 'Underwriting agent'  # Keep lowercase to match CosmosDB
+    elif agent_name_lower == 'pre-qualification agent':
+        return 'Pre-Qualification Agent'
+    elif agent_name_lower == 'document checker agent':
+        return 'Document Checker Agent'
+    elif agent_name_lower == 'application assist agent':
+        return 'Application Assist Agent'
+    elif agent_name_lower == 'valuation agent':
+        return 'Valuation Agent'
+    elif agent_name_lower == 'credit assessor agent':
+        return 'Credit Assessor Agent'
+    elif agent_name_lower == 'approval agent':
+        return 'Approval Agent'
+    elif agent_name_lower == 'offer generation agent':
+        return 'Offer Generation Agent'
+    elif agent_name_lower == 'customer communication agent':
+        return 'Customer Communication Agent'
+    elif agent_name_lower == 'post processing agent':
+        return 'Post Processing Agent'
+    elif agent_name_lower == 'audit agent':
+        return 'Audit Agent'
+    else:
+        return agent_name
 
 def get_agent_work_logs(customer_id):
     """Fetch agent work logs from CosmosDB for a specific customer"""
@@ -37,7 +85,8 @@ def get_agent_work_logs(customer_id):
         # SQL query to get agent activity for a specific customer (removed ORDER BY)
         query = """
         SELECT 
-            c.id AS agent_name,
+            c.id AS composite_id,
+            c.agent_id,
             c.customer_id,
             log.status,
             log.description,
@@ -57,11 +106,51 @@ def get_agent_work_logs(customer_id):
             enable_cross_partition_query=True
         ))
         
-        # Sort the results in Python after fetching
-        items.sort(key=lambda x: x.get('timestamp', ''))
+        # Process items to extract agent names from composite IDs
+        processed_items = []
+        for item in items:
+            # Extract agent name from composite ID (format: "agent_name_CUSTOMER_ID")
+            composite_id = item.get('composite_id', '')
+            agent_name = item.get('agent_id', '')  # Use agent_id field if available
+            
+            print(f"🔍 Processing item: composite_id='{composite_id}', agent_id='{agent_name}'")
+            
+            # If agent_id is not available, try to extract from composite_id
+            if not agent_name:
+                if composite_id:
+                    # Check if composite_id contains underscore (new format: "agent_name_CUSTOMER_ID")
+                    if '_' in composite_id:
+                        # Split by underscore and remove the last part (customer_id)
+                        parts = composite_id.split('_')
+                        if len(parts) > 1:
+                            agent_name = '_'.join(parts[:-1])  # Join all parts except the last one
+                        else:
+                            agent_name = composite_id
+                    else:
+                        # Old format: composite_id is just the agent name
+                        agent_name = composite_id
+                else:
+                    agent_name = 'Unknown Agent'
+            
+            # Normalize the agent name to match expected format
+            normalized_agent_name = normalize_agent_name(agent_name)
+            print(f"📋 Normalized agent name: '{agent_name}' -> '{normalized_agent_name}'")
+            
+            processed_item = {
+                'agent_name': normalized_agent_name,
+                'customer_id': item.get('customer_id', ''),
+                'status': item.get('status', ''),
+                'description': item.get('description', ''),
+                'timestamp': item.get('timestamp', ''),
+                'composite_id': composite_id
+            }
+            processed_items.append(processed_item)
         
-        print(f"📊 Found {len(items)} work log entries for customer {customer_id}")
-        return items
+        # Sort the results in Python after fetching
+        processed_items.sort(key=lambda x: x.get('timestamp', ''))
+        
+        print(f"📊 Found {len(processed_items)} work log entries for customer {customer_id}")
+        return processed_items
         
     except Exception as e:
         print(f"❌ Error fetching work logs from CosmosDB: {e}")
@@ -75,14 +164,15 @@ def get_agent_logs_by_agent_type(customer_id, agent_name):
     try:
         query = """
         SELECT 
-            c.id AS agent_name,
+            c.id AS composite_id,
+            c.agent_id,
             c.customer_id,
             log.status,
             log.description,
             log.timestamp
         FROM c
         JOIN log IN c.work_log
-        WHERE c.customer_id = @customer_id AND c.id = @agent_name
+        WHERE c.customer_id = @customer_id AND c.agent_id = @agent_name
         """
         
         parameters = [
@@ -96,14 +186,74 @@ def get_agent_logs_by_agent_type(customer_id, agent_name):
             enable_cross_partition_query=True
         ))
         
-        # Sort the results in Python after fetching
-        items.sort(key=lambda x: x.get('timestamp', ''))
+        # Process items to extract agent names from composite IDs
+        processed_items = []
+        for item in items:
+            # Extract agent name from composite ID or use agent_id field
+            composite_id = item.get('composite_id', '')
+            agent_name = item.get('agent_id', '')
+            
+            # If agent_id is not available, try to extract from composite_id
+            if not agent_name and composite_id:
+                parts = composite_id.split('_')
+                if len(parts) > 1:
+                    agent_name = '_'.join(parts[:-1])
+                else:
+                    agent_name = composite_id
+            
+            # Normalize the agent name to match expected format
+            agent_name = normalize_agent_name(agent_name)
+            
+            processed_item = {
+                'agent_name': agent_name,
+                'customer_id': item.get('customer_id', ''),
+                'status': item.get('status', ''),
+                'description': item.get('description', ''),
+                'timestamp': item.get('timestamp', ''),
+                'composite_id': composite_id
+            }
+            processed_items.append(processed_item)
         
-        return items
+        # Sort the results in Python after fetching
+        processed_items.sort(key=lambda x: x.get('timestamp', ''))
+        
+        return processed_items
         
     except Exception as e:
         print(f"❌ Error fetching agent-specific logs: {e}")
         return []
+
+def trigger_missing_documents_email(customer_id):
+    """Trigger the missing documents email API"""
+    try:
+        # Email API endpoint
+        email_api_url = "https://demo1414.azurewebsites.net:443/api/missing_documents/triggers/When_a_HTTP_request_is_received/invoke?api-version=2022-05-01&sp=%2Ftriggers%2FWhen_a_HTTP_request_is_received%2Frun&sv=1.0&sig=YZ3nOyknyM6xBlHMEYy_YMdDmTcgIpIVtzkgbiKX6Xg"
+        
+        # Email payload
+        email_payload = {
+            "customer_name": "Rohan Sharma",
+            "customer_email": "rohan.sharma@example.com",
+            "missing_document": "Payslip for June 2025"
+        }
+        
+        # Send POST request to the email API
+        response = requests.post(
+            email_api_url,
+            json=email_payload,
+            headers={'Content-Type': 'application/json'},
+            timeout=10
+        )
+        
+        if response.status_code == 200 or response.status_code == 202:
+            print(f"✅ Email triggered successfully for customer {customer_id}")
+            return True
+        else:
+            print(f"⚠️ Email API returned status code: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error triggering email API: {e}")
+        return False
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'banking-agent-system-2025'
@@ -118,113 +268,97 @@ class EnhancedBankingSystem:
     def __init__(self):
         self.agent_categories = {
             'APPLICATION_PROCESS': {
-                'name': '📋 Application Process',
-                'color': '#22c55e',
+                'name': '📋 Loan Origination',
+                'color': '#0369a1',
                 'description': 'Initial application and document processing',
                 'agents': {
                     'pre_qualification': {
-                        'name': 'Rajesh Kumar - Eligibility Specialist',
+                        'name': 'Credit Liability Agent',
                         'status': 'available',
-                        'description': 'Senior eligibility officer specializing in customer assessment',
+                        'description': 'Screens the customer’s basic eligibility before initiating the loan application process.',
                         'icon': '🎯',
                         'color': '#3b82f6',
                         'capabilities': ['Income verification', 'Credit score check', 'Eligibility assessment']
                     },
-                    'document_checker': {
-                        'name': 'Priya Sharma - Document Specialist',
-                        'status': 'available', 
-                        'description': 'Lead document verification officer with KYC expertise',
-                        'icon': '📋',
-                        'color': '#8b5cf6',
-                        'capabilities': ['KYC validation', 'Document verification', 'Compliance check']
-                    },
                     'application_assist': {
-                        'name': 'Amit Patel - Customer Relations',
+                        'name': 'Customer Service Agent',
                         'status': 'available',
-                        'description': 'Customer service manager for application assistance',
+                        'description': 'Assists the customer in submitting the loan application and collecting initial details.',
                         'icon': '🤝',
                         'color': '#06b6d4',
                         'capabilities': ['Application guidance', 'Form completion', 'Customer support']
+                    },
+                    'document_checker': {
+                        'name': 'Document Verification Agent',
+                        'status': 'available', 
+                        'description': 'Verifies all submitted documents for completeness and compliance requirements',
+                        'icon': '📋',
+                        'color': '#8b5cf6',
+                        'capabilities': ['KYC validation', 'Document verification', 'Compliance check']
                     }
                 }
             },
             'ASSESSMENT_PROCESS': {
-                'name': '📊 Assessment Process',
-                'color': '#f59e0b',
+                'name': '📊 Loan Assessment',
+                'color': '#0369a1',
                 'description': 'Comprehensive financial and risk assessment',
                 'agents': {
                     'valuation': {
-                        'name': 'Suresh Reddy - Property Valuer',
+                        'name': 'Asset Valuation Agent',
                         'status': 'available',
-                        'description': 'Certified property valuation expert',
+                        'description': 'Evaluates the property or asset offered as collateral to determine its market value.',
                         'icon': '🏠',
                         'color': '#10b981',
                         'capabilities': ['Property valuation', 'Market analysis', 'Asset assessment']
                     },
                     'credit_assessor': {
-                        'name': 'Meera Singh - Credit Analyst',
+                        'name': 'Credit Assessment Agent',
                         'status': 'available',
-                        'description': 'Senior credit analyst with 10+ years experience',
+                        'description': 'Analyzes the applicant’s financials and creditworthiness to assess loan viability.',
                         'icon': '📊',
                         'color': '#f59e0b',
                         'capabilities': ['Credit analysis', 'Financial modeling', 'Risk scoring']
                     },
-                    'underwriting': {
-                        'name': 'Vikram Joshi - Risk Manager',
+                    'Underwriting': {
+                        'name': 'Credit Risk and Underwriting Agent',
                         'status': 'available',
-                        'description': 'Chief underwriter and risk assessment specialist',
+                        'description': 'Reviews risks and makes the final underwriting decision for loan approval.',
                         'icon': '🔍',
                         'color': '#ef4444',
                         'capabilities': ['Risk assessment', 'Policy compliance', 'Decision modeling']
-                    },
-                    'approver': {
-                        'name': 'Anita Gupta - Branch Manager',
-                        'status': 'available',
-                        'description': 'Senior branch manager with loan approval authority',
-                        'icon': '✅',
-                        'color': '#22c55e',
-                        'capabilities': ['Final approval', 'Policy adherence', 'Decision authority']
                     }
                 }
             },
             'POST_PROCESS': {
-                'name': '📄 Post Process',
-                'color': '#3b82f6',
-                'description': 'Loan finalization and customer communication',
+                'name': '📄 Loan Offer Generation',
+                'color': '#0369a1',
+                'description': 'Customer Communication Agent',
                 'agents': {
                     'offer_generation': {
-                        'name': 'Ravi Agarwal - Loan Officer',
+                        'name': 'Offer Generation Agent',
                         'status': 'available',
-                        'description': 'Senior loan documentation officer',
+                        'description': 'Prepares and issues the official loan sanction letter and offer documentation.',
                         'icon': '📄',
                         'color': '#8b5cf6',
                         'capabilities': ['Offer creation', 'Terms calculation', 'Document generation']
                     },
                     'customer_communication': {
-                        'name': 'Kavya Nair - Relationship Manager',
+                        'name': 'Customer Relationship Agent',
                         'status': 'available',
-                        'description': 'Customer relationship and communication specialist',
+                        'description': 'Communicates updates, next steps, and approval status to the customer.',
                         'icon': '📞',
                         'color': '#06b6d4',
                         'capabilities': ['Customer notifications', 'Status updates', 'Communication management']
-                    },
-                    'post_processing': {
-                        'name': 'Deepak Malhotra - Operations Manager',
-                        'status': 'available',
-                        'description': 'Post-approval processing and documentation specialist',
-                        'icon': '⚙️',
-                        'color': '#64748b',
-                        'capabilities': ['Documentation', 'System setup', 'Process completion']
                     }
                 }
             },
             'CROSS_FUNCTIONAL': {
-                'name': '🔒 Cross Functional',
-                'color': '#9333ea',
+                'name': '🔒 Audit and Compliance Agent',
+                'color': '#0369a1',
                 'description': 'Oversight and compliance monitoring',
                 'agents': {
                     'audit': {
-                        'name': 'Sanjay Kapoor - Compliance Officer',
+                        'name': 'Audit Agent',
                         'status': 'available',
                         'description': 'Senior compliance and audit specialist',
                         'icon': '🔒',
@@ -244,10 +378,17 @@ class EnhancedBankingSystem:
         # Enhanced workflow steps
         self.workflow_steps = [
             {
-                'name': 'Initial Assessment',
+                'name': 'Eligibility Screening',
                 'category': 'APPLICATION_PROCESS',
                 'agents': ['pre_qualification'],
                 'description': 'Customer eligibility and initial requirements assessment',
+                'required': True
+            },
+            {
+                'name': 'Customer Application Assistance',
+                'category': 'APPLICATION_PROCESS',
+                'agents': ['application_assist'],
+                'description': 'Complete application form processing and validation',
                 'required': True
             },
             {
@@ -258,59 +399,45 @@ class EnhancedBankingSystem:
                 'required': True
             },
             {
-                'name': 'Application Processing',
-                'category': 'APPLICATION_PROCESS',
-                'agents': ['application_assist'],
-                'description': 'Complete application form processing and validation',
-                'required': True
-            },
-            {
-                'name': 'Property Valuation',
+                'name': 'Property/Site Valuation',
                 'category': 'ASSESSMENT_PROCESS',
                 'agents': ['valuation'],
                 'description': 'Asset and collateral valuation assessment',
                 'required': False
             },
             {
-                'name': 'Credit Analysis',
+                'name': 'Credit Analysis & Appraisal',
                 'category': 'ASSESSMENT_PROCESS',
                 'agents': ['credit_assessor'],
                 'description': 'Comprehensive credit history and financial analysis',
                 'required': True
             },
             {
-                'name': 'Risk Assessment',
+                'name': 'Risk Assessment & Underwriting',
                 'category': 'ASSESSMENT_PROCESS',
-                'agents': ['underwriting'],
+                'agents': ['Underwriting'],
                 'description': 'Advanced risk modeling and underwriting analysis',
                 'required': True
             },
             {
-                'name': 'Final Approval',
-                'category': 'ASSESSMENT_PROCESS',
-                'agents': ['approver'],
-                'description': 'Final loan approval decision and terms setting',
-                'required': True
-            },
-            {
-                'name': 'Offer Creation',
-                'category': 'POST_PROCESS',
-                'agents': ['offer_generation'],
-                'description': 'Loan offer document generation and terms finalization',
-                'required': True
-            },
-            {
-                'name': 'Customer Notification',
+                'name': 'Customer Communication',
                 'category': 'POST_PROCESS',
                 'agents': ['customer_communication'],
                 'description': 'Customer communication and status updates',
                 'required': True
             },
             {
-                'name': 'Final Processing',
+                'name': 'Loan Offer Generation & Processing',
                 'category': 'POST_PROCESS',
-                'agents': ['post_processing'],
-                'description': 'Final documentation and loan account setup',
+                'agents': ['offer_generation'],
+                'description': 'Loan offer document generation and terms finalization',
+                'required': True
+            },
+            {
+                'name': 'Compliance Check and Internal Audit',
+                'category': 'CROSS_FUNCTIONAL',
+                'agents': ['audit'],
+                'description': 'Compliance verification and audit process',
                 'required': True
             }
         ]
@@ -335,7 +462,7 @@ class EnhancedBankingSystem:
             'agent_responses': {},
             'agents_involved': [],
             'audit_trail': [],
-            'overall_progress': 45,  # Set to 45% as requested
+            'overall_progress': 96,  # Set to 96% as requested
             'summary': {
                 'customer_profile': {},
                 'financial_summary': {},
@@ -400,12 +527,27 @@ banking_system = EnhancedBankingSystem()
 
 @app.route('/')
 def index():
+    # Applications page is now the default landing page
+    return render_template('applications.html')
+
+@app.route('/dashboard')
+def dashboard():
+    # The original index page is now accessible at /dashboard
+    # Pass any URL parameters to ensure application loading works
     return render_template('index.html')
+
+@app.route('/applications')
+def applications():
+    return render_template('applications.html')
 
 @app.route('/api/applications')
 def get_applications():
+    apps = list(application_workflows.values())
+    
+    # If no applications in the system, send an empty list
+    # Our JavaScript will use dummy data when the list is empty
     return jsonify({
-        'applications': list(application_workflows.values()),
+        'applications': apps,
         'agent_categories': banking_system.agent_categories,
         'agents': banking_system.agents
     })
@@ -655,6 +797,52 @@ def process_agent_message(agent_type, message, app_id):
     # Get customer ID from application
     customer_id = application_workflows.get(app_id, {}).get('customer_id', 'UNKNOWN')
     
+    # Special handling for Loan Documentation Agent email triggers
+    if agent_type == 'document_checker':
+        message_lower = message.lower().strip()
+        email_triggers = [
+            'send the mail',
+            'send mail',
+            'send the mail for missing documents',
+            'send mail for missing documents',
+            'send the mail for the missing documents',
+            'send mail for the missing documents'
+        ]
+        
+        # Check if the message matches any email trigger phrases
+        if any(trigger in message_lower for trigger in email_triggers):
+            print(f"🔔 Email trigger detected for Loan Documentation Agent")
+            
+            # Trigger the missing documents email
+            email_sent = trigger_missing_documents_email(customer_id)
+            
+            if email_sent:
+                response_text = "📧 **Email Sent Successfully**\n\n"
+                response_text += f"**Customer:** {customer_id}\n"
+                response_text += f"**Action:** Missing documents notification email sent\n\n"
+                response_text += "✅ An email notification regarding missing documents has been sent to the customer.\n\n"
+                response_text += "**Email Details:**\n"
+                response_text += "• **Recipient:** Rohan Sharma (rohan.sharma@example.com)\n"
+                response_text += "• **Subject:** Missing Document Required - Loan Application\n"
+                response_text += "• **Missing Document:** Payslip for June 2025\n\n"
+                response_text += f"*Email sent on {datetime.datetime.now().strftime('%B %d, %Y at %I:%M %p')}*"
+                
+                # Add guidance for next agent
+                next_agent_name = None
+                for agent_key, current_name, next_name in AGENT_WORKFLOW_ORDER:
+                    if agent_key == agent_type:
+                        next_agent_name = next_name
+                        break
+                
+                if next_agent_name:
+                    response_text += f"\n\n**Next Step:** Select **{next_agent_name}** for the next updates."
+                else:
+                    response_text += f"\n\n**Workflow Complete:** This is the final step in the loan processing workflow."
+                
+                return response_text
+            else:
+                return "❌ **Email Failed**\n\nThere was an issue sending the email notification. Please try again or contact technical support."
+    
     # Check if we have pre-loaded agent details in the application
     application = application_workflows.get(app_id, {})
     agent_details = application.get('agent_details', {})
@@ -666,7 +854,8 @@ def process_agent_message(agent_type, message, app_id):
             print(f"✅ Using pre-loaded CosmosDB data for {agent_type}")
             return agent_detail['work_history_text']
         else:
-            print(f"📋 No CosmosDB data available for {agent_type}, using fallback")
+            print(f"📋 No CosmosDB data available for {agent_type}")
+            return f"📋 **No Data Available**\n\nNo work logs found for this agent and customer {customer_id}."
     else:
         # Fallback: Try to get real work logs from CosmosDB for this agent
         cosmos_logs = []
@@ -675,15 +864,13 @@ def process_agent_message(agent_type, message, app_id):
                 # Map agent types to CosmosDB agent names
                 agent_name_mapping = {
                     'pre_qualification': 'Pre-Qualification Agent',
-                    'document_checker': 'Document Checker Agent',
+                    'document_checker': 'Document Checker Agent', 
                     'application_assist': 'Application Assist Agent',
                     'valuation': 'Valuation Agent',
                     'credit_assessor': 'Credit Assessor Agent',
-                    'underwriting': 'Underwriting Agent',
-                    'approver': 'Approval Agent',
+                    'Underwriting': 'Underwriting agent',  # Updated to match CosmosDB format
                     'offer_generation': 'Offer Generation Agent',
                     'customer_communication': 'Customer Communication Agent',
-                    'post_processing': 'Post Processing Agent',
                     'audit': 'Audit Agent'
                 }
                 
@@ -694,257 +881,41 @@ def process_agent_message(agent_type, message, app_id):
             except Exception as e:
                 print(f"⚠️ Error fetching CosmosDB logs for {agent_type}: {e}")
         
-        # If we have real logs from CosmosDB, format and return them
-        if cosmos_logs:
-            log_text = f"� **Application Progress Update**\n\n"
-            log_text += f"**Customer:** {customer_id}\n"
-            log_text += f"**Recent Updates:** {len(cosmos_logs)} items\n\n"
+        # If we have real logs from CosmosDB, format and return them            if cosmos_logs:
+                log_text = f"📊 **Application Progress Update**\n\n"
+                log_text += f"**Customer:** {customer_id}\n\n"
+            
+            # Create HTML table format for better display, wrapped in a div with no extra spacing
+            log_text += '<div class="agent-logs-container">'
+            log_text += '<table class="agent-logs-table">'
+            log_text += '<thead><tr><th>#</th><th>Details</th><th>Date</th></tr></thead>'
+            log_text += '<tbody>'
             
             for i, log in enumerate(cosmos_logs, 1):
-                log_text += f"**Update {i}:**\n"
-                log_text += f"• **Status:** {log['status']}\n"
-                log_text += f"• **Details:** {log['description']}\n"
-                log_text += f"• **Date:** {log['timestamp']}\n"
-                log_text += "-" * 50 + "\n"
+                description = log['description']
+                timestamp = log['timestamp']
+                log_text += f'<tr><td>{i}</td><td>{description}</td><td>{timestamp}</td></tr>'
             
-            log_text += f"\n*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
+            log_text += '</tbody></table></div>'
+            
+            log_text += f"*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
+            
+            # Add guidance for next agent
+            next_agent_name = None
+            for agent_key, current_name, next_name in AGENT_WORKFLOW_ORDER:
+                if agent_key == agent_type:
+                    next_agent_name = next_name
+                    break
+            
+            if next_agent_name:
+                log_text += f"\n\n**Next Step:** Select **{next_agent_name}** for the next updates."
+            else:
+                log_text += f"\n\n**Workflow Complete:** This is the final step in the loan processing workflow."
+            
             return log_text
-    
-    # Fallback to mock responses if no CosmosDB data is available
-    
-    if agent_type == 'pre_qualification':
-        return f"""🎯 **Pre-Qualification Analysis Complete**
-
-**Customer Eligibility Assessment:**
-• Income Verification: ✅ Verified (Monthly: ₹85,000)
-• Employment Status: ✅ Stable (5+ years experience)
-• Credit Score: ✅ Excellent (780/900)
-• Existing EMIs: ₹12,000/month (DTI: 14%)
-
-**Loan Eligibility:**
-• Maximum Eligible Amount: ₹65,00,000
-• Recommended Tenure: 20 years
-• Estimated EMI: ₹52,000/month
-• Interest Rate Band: 8.5% - 9.2%
-
-**Next Steps:** Proceed to document verification stage."""
-
-    elif agent_type == 'document_checker':
-        return f"""📋 **Document Verification Summary**
-
-**KYC Documents:**
-• PAN Card: ✅ Verified (ABCDE1234F)
-• Aadhaar: ✅ Verified & Linked
-• Passport: ✅ Valid till 2030
-• Address Proof: ✅ Current utility bill verified
-
-**Income Documents:**
-• Salary Slips: ✅ Last 3 months verified
-• ITR: ✅ Last 2 years (₹12L, ₹14L annually)
-• Form 16: ✅ Current year verified
-• Bank Statements: ✅ 6 months analyzed
-
-**Property Documents:**
-• Sale Agreement: ✅ Verified
-• Title Documents: ✅ Clear title
-• Approvals: ✅ All sanctions in place
-
-**Status:** All documents verified successfully. Compliance score: 98%"""
-
-    elif agent_type == 'valuation':
-        return f"""🏠 **Property Valuation Report**
-
-**Property Details:**
-• Type: 3BHK Apartment, 1250 sq ft
-• Location: Prime residential area
-• Age: Under construction (Ready in 6 months)
-• Builder: Reputed developer with good track record
-
-**Valuation Summary:**
-• Agreement Value: ₹75,00,000
-• Market Valuation: ₹78,50,000
-• Bank Valuation: ₹76,00,000
-• LTV Ratio: 85% (₹64,60,000 eligible)
-
-**Market Analysis:**
-• Recent sales in vicinity: ₹6,200/sq ft
-• Appreciation trend: 8% annually
-• Liquidity: High (Premium location)
-
-**Recommendation:** Approve at bank valuation. Property is good collateral."""
-
-    elif agent_type == 'credit_assessor':
-        return f"""📊 **Credit Assessment Report**
-
-**Credit Profile Analysis:**
-• CIBIL Score: 780 (Excellent)
-• Credit History: 8 years, clean record
-• Active Credits: 2 (Credit card + Personal loan)
-• Payment Behavior: 100% on-time payments
-
-**Financial Strength:**
-• Net Monthly Income: ₹75,000
-• Monthly Obligations: ₹12,000
-• Surplus Income: ₹63,000
-• Proposed EMI: ₹52,000 (69% utilization)
-
-**Risk Factors:**
-• Industry: IT (Stable sector)
-• Job Stability: ✅ 5+ years same company
-• Co-applicant: Yes (Working spouse)
-
-**Credit Decision:** APPROVE with standard terms. Low risk profile."""
-
-    elif agent_type == 'underwriting':
-        # Mock underwriting response
-        return f"""🔍 **Comprehensive Underwriting Analysis**
-
-**Risk Assessment Matrix:**
-• Credit Risk: LOW (Score: 780, clean history)
-• Income Risk: LOW (Stable IT sector, senior position)
-• Property Risk: LOW (Prime location, reputed builder)
-• Market Risk: MEDIUM (Current rate environment)
-
-**Policy Compliance Check:**
-• LTV Ratio: 85% ✅ (Within policy limit of 90%)
-• FOIR: 69% ✅ (Within limit of 75%)
-• Age Factor: ✅ (32 years, retirement coverage adequate)
-• Insurance: ✅ (Life + Property insurance in place)
-
-**Advanced Analytics:**
-• Probability of Default: 0.8% (Very Low)
-• Loss Given Default: 15% (Good recovery prospects)
-• Expected Loss: ₹7,800 (Well within appetite)
-
-**FINAL RECOMMENDATION:** **APPROVE** 
-Loan Amount: ₹64,60,000 | Rate: 8.75% | Tenure: 20 years
-
-*Analysis completed using standard underwriting guidelines*"""
-
-    elif agent_type == 'approver':
-        return f"""✅ **LOAN APPROVAL DECISION**
-
-**Application Status: APPROVED** 🎉
-
-**Approved Terms:**
-• Loan Amount: ₹64,60,000
-• Interest Rate: 8.75% (Floating)
-• Tenure: 20 years (240 months)
-• Monthly EMI: ₹56,847
-• Processing Fee: ₹25,000 + GST
-
-**Conditions:**
-• Property insurance mandatory
-• Life insurance for loan amount
-• NACH mandate for EMI auto-debit
-• Annual income proof submission
-
-**Validity:** This approval is valid for 6 months from date of sanction.
-
-**Next Steps:** Proceed to offer generation and documentation."""
-
-    elif agent_type == 'offer_generation':
-        return f"""📄 **Loan Offer Generated**
-
-**GLOBAL TRUST BANK - HOME LOAN SANCTION LETTER**
-
-Dear {application_workflows[app_id]['customer_id']},
-
-We are pleased to inform you that your home loan application has been **APPROVED**.
-
-**Loan Details:**
-• Sanctioned Amount: ₹64,60,000
-• Interest Rate: 8.75% p.a. (Floating)
-• Tenure: 20 years
-• EMI: ₹56,847 per month
-• Processing Fee: ₹25,000 + GST (18%)
-
-**Key Features:**
-• No prepayment charges after 1 year
-• Top-up facility available
-• Online account management
-• Doorstep service available
-
-**Documents Required for Disbursal:**
-• Original property documents
-• Insurance policies
-• NACH mandate form
-• Loan agreement execution
-
-Congratulations on your loan approval! 🏠"""
-
-    elif agent_type == 'customer_communication':
-        return f"""📞 **Customer Communication Update**
-
-**Communication Timeline:**
-• 10:30 AM: SMS sent - Loan approval notification
-• 10:45 AM: Email sent - Detailed sanction letter
-• 11:00 AM: WhatsApp sent - Welcome message with next steps
-• 11:15 AM: Call attempted - Customer unavailable
-• 11:30 AM: Voicemail left - Callback requested
-
-**Customer Response:**
-• Status: Acknowledged via SMS reply
-• Feedback: "Very happy with the quick approval"
-• Query: Asked about disbursement timeline
-• Follow-up: Scheduled for tomorrow 2 PM
-
-**Next Communications:**
-• Legal document execution appointment
-• Insurance advisor introduction
-• Disbursement process explanation
-
-**Customer Satisfaction Score:** 9/10 (Excellent)"""
-
-    elif agent_type == 'post_processing':
-        return f"""⚙️ **Post-Processing Status Update**
-
-**Documentation Status:**
-• Loan Agreement: ✅ Executed
-• NACH Mandate: ✅ Activated
-• Insurance Policies: ✅ In force
-• Property Registration: 🔄 In progress
-
-**System Setup:**
-• Loan Account: ✅ Created (Account: 1234567890)
-• Online Banking: ✅ Activated
-• Mobile App Access: ✅ Enabled
-• EMI Auto-debit: ✅ Scheduled for 5th of every month
-
-**Disbursement Readiness:**
-• Legal clearance: ✅ Complete
-• Technical clearance: ✅ Complete
-• Financial closure: ✅ Ready
-• Disbursement amount: ₹64,60,000
-
-**Timeline:** Disbursement scheduled for next working day post property registration."""
-
-    elif agent_type == 'audit':
-        return f"""🔒 **Audit Compliance Report**
-
-**Process Compliance Review:**
-• KYC Compliance: ✅ 100% Complete
-• Credit Policy Adherence: ✅ All norms followed
-• Documentation Standards: ✅ Met
-• Approval Authority: ✅ Proper delegation followed
-
-**Regulatory Compliance:**
-• RBI Guidelines: ✅ Fully compliant
-• RERA Compliance: ✅ Project registered
-• Fair Practice Code: ✅ Adhered
-• Customer Privacy: ✅ Protected
-
-**Risk Management:**
-• Credit Risk: ✅ Within appetite
-• Operational Risk: ✅ Mitigated
-• Legal Risk: ✅ Addressed
-• Reputational Risk: ✅ Low
-
-**Audit Opinion:** CLEAN - No compliance issues identified.
-Process Quality Score: 96/100"""
-
-    else:
-        return f"Hello! I'm the {banking_system.agents[agent_type]['name']}. I'm ready to assist you with {message}. How can I help you today?"
+        else:
+            print(f"📋 No CosmosDB data found for {agent_type}")
+            return f"📋 **No Data Available**\n\nNo work logs found for this agent and customer {customer_id}."
 
 @app.route('/api/applications/search')
 def search_applications():
@@ -990,6 +961,7 @@ def search_applications():
                 # Group logs by agent and prepare detailed agent information
                 for log in cosmos_logs:
                     agent_name = log['agent_name']
+                    print(f"🔍 Processing agent: '{agent_name}' for customer {customer_id}")
                     if agent_name not in logs_by_agent:
                         logs_by_agent[agent_name] = []
                     
@@ -999,6 +971,8 @@ def search_applications():
                         'timestamp': log['timestamp']
                     })
                 
+                print(f"📋 Available agents in logs: {list(logs_by_agent.keys())}")
+                
                 # Pre-populate agent details with work history for all agents
                 agent_name_mapping = {
                     'Pre-Qualification Agent': 'pre_qualification',
@@ -1006,36 +980,58 @@ def search_applications():
                     'Application Assist Agent': 'application_assist',
                     'Valuation Agent': 'valuation',
                     'Credit Assessor Agent': 'credit_assessor',
-                    'Underwriting Agent': 'underwriting',
-                    'Approval Agent': 'approver',
+                    'Underwriting agent': 'Underwriting',  # Exact match for CosmosDB format (lowercase)
                     'Offer Generation Agent': 'offer_generation',
                     'Customer Communication Agent': 'customer_communication',
-                    'Post Processing Agent': 'post_processing',
                     'Audit Agent': 'audit'
                 }
+                
+                print(f"🗺️ Agent name mapping: {agent_name_mapping}")
                 
                 # Create detailed agent information for each agent
                 for cosmos_agent_name, agent_type in agent_name_mapping.items():
                     agent_info = banking_system.agents.get(agent_type, {})
                     agent_logs = logs_by_agent.get(cosmos_agent_name, [])
                     
+                    print(f"🔍 Processing mapping: '{cosmos_agent_name}' -> '{agent_type}' (found {len(agent_logs)} logs)")
+                    
                     # Format the work history text for this agent
                     work_history_text = ""
                     if agent_logs:
-                        work_history_text = f"� **Application Progress Update**\n\n"
-                        work_history_text += f"**Customer:** {customer_id}\n"
-                        work_history_text += f"**Recent Updates:** {len(agent_logs)} items\n\n"
+                        work_history_text = f"📊 **Application Progress Update**\n\n"
+                        work_history_text += f"**Customer:** {customer_id}\n\n"
+                        
+                        # Create HTML table format for better display, wrapped in a div with no extra spacing
+                        work_history_text += '<div class="agent-logs-container">'
+                        work_history_text += '<table class="agent-logs-table">'
+                        work_history_text += '<thead><tr><th>#</th><th>Details</th><th>Date</th></tr></thead>'
+                        work_history_text += '<tbody>'
                         
                         for i, log in enumerate(agent_logs, 1):
-                            work_history_text += f"**Update {i}:**\n"
-                            work_history_text += f"• **Status:** {log['status']}\n"
-                            work_history_text += f"• **Details:** {log['description']}\n"
-                            work_history_text += f"• **Date:** {log['timestamp']}\n"
-                            work_history_text += "-" * 50 + "\n"
+                            description = log['description']
+                            timestamp = log['timestamp']
+                            work_history_text += f'<tr><td>{i}</td><td>{description}</td><td>{timestamp}</td></tr>'
+                        
+                        work_history_text += '</tbody></table></div>'
                         
                         work_history_text += f"\n*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
+                        
+                        # Add guidance for next agent
+                        next_agent_name = None
+                        for agent_key, current_name, next_name in AGENT_WORKFLOW_ORDER:
+                            if agent_key == agent_type:
+                                next_agent_name = next_name
+                                break
+                        
+                        if next_agent_name:
+                            work_history_text += f"\n\n**Next Step:** Select **{next_agent_name}** for the next updates."
+                        else:
+                            work_history_text += f"\n\n**Workflow Complete:** This is the final step in the loan processing workflow."
+                        
+                        print(f"✅ Generated work history for {agent_type}: {len(agent_logs)} entries")
                     else:
-                        work_history_text = f"📋 **No recent updates found**\n\nNo progress updates available for customer {customer_id}."
+                        work_history_text = f"📋 **No recent updates found**\n\nNo progress updates available for customer {customer_id} for this agent."
+                        print(f"❌ No logs found for {agent_type} (cosmos name: {cosmos_agent_name})")
                     
                     agent_details[agent_type] = {
                         'agent_info': agent_info,
@@ -1067,7 +1063,7 @@ def search_applications():
     else:
         # Create a demo application if none found (for testing purposes)
         if application_id or customer_id:
-            demo_customer_id = customer_id or f"CUST{application_id[-4:]}" if application_id else "CUST0001"
+            demo_customer_id = customer_id if customer_id else (f"CUST{application_id[-4:]}" if application_id else "CUST0001")
             demo_app_id = banking_system.create_application(demo_customer_id)
             demo_app = application_workflows[demo_app_id]
             
@@ -1110,11 +1106,10 @@ def search_applications():
                     'Application Assist Agent': 'application_assist',
                     'Valuation Agent': 'valuation',
                     'Credit Assessor Agent': 'credit_assessor',
-                    'Underwriting Agent': 'underwriting',
-                    'Approval Agent': 'approver',
+                    'Underwriting agent': 'Underwriting',  # Updated to match CosmosDB format
+                    'Underwriting Agent': 'Underwriting',   # Keep both for backward compatibility
                     'Offer Generation Agent': 'offer_generation',
                     'Customer Communication Agent': 'customer_communication',
-                    'Post Processing Agent': 'post_processing',
                     'Audit Agent': 'audit'
                 }
                 
@@ -1126,18 +1121,35 @@ def search_applications():
                     # Format the work history text for this agent
                     work_history_text = ""
                     if agent_logs:
-                        work_history_text = f"� **Application Progress Update**\n\n"
-                        work_history_text += f"**Customer:** {demo_customer_id}\n"
-                        work_history_text += f"**Recent Updates:** {len(agent_logs)} items\n\n"
+                        work_history_text = f"📊 **Application Progress Update**\n\n"
+                        work_history_text += f"**Customer:** {demo_customer_id}\n\n"
+                        
+                        # Create HTML table format for better display, wrapped in a div with no extra spacing
+                        work_history_text += '<div class="agent-logs-container">'
+                        work_history_text += '<table class="agent-logs-table">'
+                        work_history_text += '<thead><tr><th>#</th><th>Details</th><th>Date</th></tr></thead>'
+                        work_history_text += '<tbody>'
                         
                         for i, log in enumerate(agent_logs, 1):
-                            work_history_text += f"**Update {i}:**\n"
-                            work_history_text += f"• **Status:** {log['status']}\n"
-                            work_history_text += f"• **Details:** {log['description']}\n"
-                            work_history_text += f"• **Date:** {log['timestamp']}\n"
-                            work_history_text += "-" * 50 + "\n"
+                            description = log['description']
+                            timestamp = log['timestamp']
+                            work_history_text += f'<tr><td>{i}</td><td>{description}</td><td>{timestamp}</td></tr>'
+                        
+                        work_history_text += '</tbody></table></div>'
                         
                         work_history_text += f"\n*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
+                        
+                        # Add guidance for next agent
+                        next_agent_name = None
+                        for agent_key, current_name, next_name in AGENT_WORKFLOW_ORDER:
+                            if agent_key == agent_type:
+                                next_agent_name = next_name
+                                break
+                        
+                        if next_agent_name:
+                            work_history_text += f"\n\n**Next Step:** Select **{next_agent_name}** for the next updates."
+                        else:
+                            work_history_text += f"\n\n**Workflow Complete:** This is the final step in the loan processing workflow."
                     else:
                         work_history_text = f"📋 **No recent updates found**\n\nNo progress updates available for customer {demo_customer_id}."
                     
@@ -1171,4 +1183,5 @@ def search_applications():
         }), 404
 
 if __name__ == '__main__':
+    print("🚀 Starting Flask-SocketIO server...")
     socketio.run(app, debug=True, host='0.0.0.0', port=5000)
