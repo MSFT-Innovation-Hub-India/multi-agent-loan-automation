@@ -9,10 +9,10 @@ from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
 # Azure SQL Database connection configuration
-SERVER = "global-trust-bank.database.windows.net"
-DATABASE = "Global_Trust_Bank"
-USERNAME = "Password_is_Pa_ss_12_3_add_at_inbetween_dont_include_underscore"
-PASSWORD = "Pass@123"
+SERVER = "XXXX"
+DATABASE = "XXXX"
+USERNAME = "XXXX"
+PASSWORD = "XXXX"
 
 # Loan Assessment Parameters
 LOAN_PARAMETERS = {

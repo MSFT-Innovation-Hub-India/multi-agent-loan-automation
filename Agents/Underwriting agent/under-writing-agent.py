@@ -25,10 +25,10 @@ class CreditUnderwritingAgent:
         """Initialize Azure SQL Database connection"""
         try:
             # Global Trust Bank Azure SQL Database connection
-            server = 'global-trust-bank.database.windows.net'
-            database = 'Global_Trust_Bank'
-            username = 'Password_is_Pa_ss_12_3_add_at_inbetween_dont_include_underscore'
-            password = 'Pass@123'
+            server = 'XXXX'
+            database = 'XXXX'
+            username = 'XXXX'
+            password = 'XXXX'
             driver = '{ODBC Driver 18 for SQL Server}'
             
             connection_string = f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'
