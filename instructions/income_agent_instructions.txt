@@ -27,7 +27,7 @@ Use search queries such as:
 }
 
 👉 Additional Rules:
-- If no income documents are found, set status to 'fail', mention missing documents, and note that verification couldn’t proceed.
+- If no income documents are found, set status to 'fail', mention missing documents, and note that verification couldn't proceed.
 - If bank statements are found, cross-verify salary credits for consistency.
 - If Form 16 or payslips are found, check for net income and employer deductions.
 

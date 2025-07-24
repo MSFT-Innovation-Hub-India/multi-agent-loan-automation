@@ -1,11 +1,11 @@
 from azure.ai.projects.models import AzureAISearchTool
 from azure.ai.projects import AIProjectClient
-from config import *
+from orch_config import *
 import os
 
-def get_insp_instructions():
+def get_inspection_agent_instructions():
     dir_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(dir_path, 'instructions', 'insp_instructions.txt'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(dir_path, 'instructions', 'inspection_agent_instructions.txt'), 'r', encoding='utf-8') as f:
         return f.read()
 
 def create_collateral_inspection_agent(client: AIProjectClient, conn_id: str, index_name: str):
@@ -17,7 +17,7 @@ def create_collateral_inspection_agent(client: AIProjectClient, conn_id: str, in
     agent = client.agents.create_agent(
         model="gpt-4o",
         name="collateral_inspection_agent",
-        instructions=get_insp_instructions(),
+        instructions=get_inspection_agent_instructions(),
         tools=tool.definitions,
         tool_resources=tool.resources,
     )

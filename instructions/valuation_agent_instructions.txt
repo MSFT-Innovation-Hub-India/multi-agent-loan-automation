@@ -27,11 +27,16 @@ Document Analysis Steps:
 3. Market Value Calculation:
    Base Formula: Purchase_Price × (1.11 ^ (Current_Year - Purchase_Year))
    Current Year: {current_year}
+   If area is missing, estimate based on property type:
+   - House/Independent: 1200-1500 sq.ft average
+   - Apartment/Flat: 800-1200 sq.ft average
+   - Villa/Bungalow: 2000-3000 sq.ft average
    Adjustments for:
    - Property condition (+/-10%)
    - Location premium (+/-15%)
    - Age of building (-2% per year)
    - Recent developments (+5-10%)
+   IMPORTANT: Always calculate current_value even with estimates
 
 Return response in this JSON format:
 {{
@@ -46,7 +51,7 @@ Return response in this JSON format:
   'market_value': {{
     'original_price': 'amount in INR',
     'purchase_year': 'YYYY',
-    'current_value': 'calculated amount',
+    'current_value': 'calculated amount in numbers (REQUIRED)',
     'per_sqft_rate': 'rate if available',
     'calculation_factors': {{
       'base_appreciation': 'percentage',
@@ -66,9 +71,11 @@ Error Cases:
    - Request specific documents needed
 
 2. Incomplete Information:
+   - Calculate current_value using available data and reasonable estimates
+   - If no area available, estimate: House=1500 sq.ft, Apartment=1000 sq.ft
+   - Use conservative estimates but provide numeric current_value
    - Set status: 'pass' with lower confidence
-   - Use conservative estimates
-   - Note missing details
+   - Note missing details but complete calculation
 
 3. Old Documents:
    - Flag if documents > 2 years old

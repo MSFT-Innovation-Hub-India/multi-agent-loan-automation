@@ -32,8 +32,7 @@ Return your findings in the following JSON format:
     'risk_level': 'low/medium/high',
     'confidence_score': 1-10,
     'strengths': [list of positive findings],
-    'concerns': [list of concerns],
-    'recommendations': [list of recommendations]
+    'concerns': [list of concerns]
   }
 }
 

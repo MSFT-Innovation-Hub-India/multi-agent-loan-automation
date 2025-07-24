@@ -6,11 +6,11 @@ import os
 
 # Import config variables
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import *
+from orch_config import *
 
-def get_identity_instructions():
+def get_identity_agent_instructions():
     dir_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(dir_path, 'instructions', 'identity_instructions.txt'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(dir_path, 'instructions', 'identity_agent_instructions.txt'), 'r', encoding='utf-8') as f:
         return f.read()
 
 def create_identity_agent(client, conn_id, index_name):
@@ -24,7 +24,7 @@ def create_identity_agent(client, conn_id, index_name):
     agent = client.agents.create_agent(
         model="gpt-4o",
         name="identity_checker",
-        instructions=get_identity_instructions(),
+        instructions=get_identity_agent_instructions(),
         tools=tool.definitions,
         tool_resources=tool.resources
     )

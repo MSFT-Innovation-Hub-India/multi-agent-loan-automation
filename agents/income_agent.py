@@ -1,11 +1,11 @@
 from azure.ai.projects.models import AzureAISearchTool
 from azure.ai.projects import AIProjectClient
-from config import *
+from orch_config import *
 import os
 
-def get_income_instructions():
+def get_income_agent_instructions():
     dir_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    with open(os.path.join(dir_path, 'instructions', 'income_instructions.txt'), 'r', encoding='utf-8') as f:
+    with open(os.path.join(dir_path, 'instructions', 'income_agent_instructions.txt'), 'r', encoding='utf-8') as f:
         return f.read()
 
 def create_income_agent(client: AIProjectClient, conn_id: str, index_name: str):
@@ -19,7 +19,7 @@ def create_income_agent(client: AIProjectClient, conn_id: str, index_name: str):
     agent = client.agents.create_agent(
         model="gpt-4o",
         name="income_checker",
-        instructions=get_income_instructions(),
+        instructions=get_income_agent_instructions(),
         tools=tool.definitions,
         tool_resources=tool.resources
     )
