@@ -252,14 +252,7 @@ BANK-UI/
 Internal use only - Global Trust Bank
 Confidential and proprietary software
 
-## Support
 
-For technical support and questions:
-- Internal IT Support: ext. 1234
-- Development Team: banking-dev@globaltrust.com
-- Emergency Support: 24/7 hotline available
-
----
 
 *Last Updated: June 23, 2025*
 *Version: 1.0.0*
