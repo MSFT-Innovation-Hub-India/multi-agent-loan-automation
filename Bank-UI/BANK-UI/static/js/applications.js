@@ -33,7 +33,7 @@ function useDummyApplications() {
     // Create dummy applications for demonstration with data structure matching main dashboard expectations
     const dummyApplications = [
         {
-            id: 'APP10001',
+            id: 'GTB-2156-4823-7891-0456',
             customer_id: 'CUST0001',
             created_at: new Date(2025, 6, 7, 9, 15).toISOString(),
             overall_progress: 25,
@@ -55,7 +55,7 @@ function useDummyApplications() {
             }
         },
         {
-            id: 'APP10002',
+            id: 'GTB-3467-1928-5674-2389',
             customer_id: 'CUST0002',
             created_at: new Date(2025, 6, 7, 10, 30).toISOString(),
             overall_progress: 15,
@@ -77,7 +77,7 @@ function useDummyApplications() {
             }
         },
         {
-            id: 'APP10003',
+            id: 'GTB-5892-3741-8025-4667',
             customer_id: 'CUST0003',
             created_at: new Date(2025, 6, 8, 11, 45).toISOString(),
             overall_progress: 90,
@@ -99,7 +99,7 @@ function useDummyApplications() {
             }
         },
         {
-            id: 'APP10004',
+            id: 'GTB-7412-6983-2156-8734',
             customer_id: 'CUST0004',
             created_at: new Date(2025, 6, 8, 14, 20).toISOString(),
             overall_progress: 100,
@@ -121,12 +121,12 @@ function useDummyApplications() {
             }
         },
         {
-            id: 'APP10005',
-            customer_id: 'CUST0005',
+            id: 'GTB-8475-9821-6643-1023',
+            customer_id: 'CUST0241',
             created_at: new Date(2025, 6, 9, 9, 0).toISOString(),
             overall_progress: 65,
-            loan_amount: 120000,
-            loan_purpose: 'Home Renovation',
+            loan_amount: 4000000,
+            loan_purpose: 'Home Loan',
             status: 'In Progress',
             messages: [],
             current_agent: 'credit_assessor',
@@ -143,7 +143,7 @@ function useDummyApplications() {
             }
         },
         {
-            id: 'APP10006',
+            id: 'GTB-9356-4127-8459-3018',
             customer_id: 'CUST0006',
             created_at: new Date(2025, 6, 9, 16, 15).toISOString(),
             overall_progress: 40,

@@ -7,7 +7,7 @@ import sys
 import os
 import requests
 from azure.cosmos import CosmosClient, exceptions
-
+import os
 # Add the parent directory to Python path to import the Underwriting agent
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -25,10 +25,10 @@ AGENT_WORKFLOW_ORDER = [
 ]
 
 # CosmosDB Configuration
-COSMOS_URI = "https://globaltrustbank.documents.azure.com:443/"
-COSMOS_KEY = "EPcG6JzbLnWUNyIGZRSvCLiAypzsU3GBqEO8E7ZlqKVwRLHXHKrkniFMKFfwCJc8qS3jfdlmJVhFACDb8bHG5Q=="
-DATABASE_NAME = "LoanProcessingDB"
-CONTAINER_NAME = "AgentLogs"
+COSMOS_URI = os.environ.get("COSMOS_URI")
+COSMOS_KEY = os.environ.get("COSMOS_KEY")
+DATABASE_NAME = os.environ.get("DATABASE_NAME")
+CONTAINER_NAME = os.environ.get("CONTAINER_NAME")
 
 # Initialize Cosmos client
 try:

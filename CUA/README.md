@@ -4,35 +4,74 @@ A comprehensive Customer Relationship Management (CRM) system for Global Trust B
 
 ## 🏦 Project Overview
 
-This project consists of two main components:
+This project consists of four main components:
 
-1. **Frontend**: A Flask-based web application for bank CRM management
-2. **Backend**: An AI-powered automation system using Azure OpenAI and browser automation
+1. **Main CUA Application**: A Flask-based API service for customer lookup automation (`app.py`)
+2. **CRM-UI**: A comprehensive web application for bank CRM management
+3. **Frontend - CUA**: UI assets for the customer lookup interface
+4. **Backend**: An AI-powered automation system using Azure OpenAI and browser automation
 
 ## 📁 Project Structure
 
 ```
 CUA/
-├── Frontend/
-│   ├── app.py                    # Main Flask application
+├── app.py                       # Main CUA application - Customer lookup API service
+├── CRM-UI/
+│   ├── app.py                   # CRM web application - Full bank management system
 │   ├── static/
-│   │   └── style.css            # Custom CSS styles
+│   │   └── style.css           # Custom CSS styles for CRM
 │   └── templates/
-│       ├── base.html            # Base template
-│       ├── login.html           # Login page
-│       ├── dashboard.html       # Main dashboard
-│       ├── customers.html       # Customer list view
+│       ├── base.html           # Base template
+│       ├── dashboard.html      # Main CRM dashboard
+│       ├── customers.html      # Customer list view
 │       ├── customer_detail.html # Individual customer details
-│       ├── add_customer.html    # Add new customer form
-│       ├── loans.html           # Loan management
-│       └── transactions.html    # Transaction history
+│       ├── add_customer.html   # Add new customer form
+│       ├── loans.html          # Loan management
+│       └── transactions.html   # Transaction history
+├── Frontend - CUA/
+│   ├── static/                 # Frontend assets for CUA lookup interface
+│   │   ├── script.js           # JavaScript for customer lookup
+│   │   └── styles.css          # CSS for lookup interface
+│   └── templates/              # Templates for CUA interface
+│       └── index.html          # Customer lookup form
 ├── Backend - CUA/
-│   └── globaltrustbank_cau.py   # AI automation backend
-├── requirements.txt             # Python dependencies
-└── README.md                    # This file
+│   ├── globaltrustbank_cau.py  # AI automation backend
+│   └── instrctions.txt         # Backend instructions
+├── .env.example                # Environment configuration template
+├── requirements.txt            # Python dependencies
+└── README.md                   # This file
 ```
 
-## 🚀 Features
+## � Application Workflow
+
+### Customer Lookup Process
+1. **Frontend Interface**: User accesses the customer lookup form via `Frontend - CUA/templates/index.html`
+2. **Main API Service**: `app.py` receives lookup requests and manages sessions
+3. **Backend Automation**: AI agent in `Backend - CUA/` performs automated lookups
+4. **Results Processing**: CRM reference numbers are extracted and returned to the user
+
+### CRM Management Process
+1. **CRM Interface**: Bank staff access the full CRM system via `CRM-UI/app.py`
+2. **Customer Management**: Complete customer profiles, accounts, and transaction management
+3. **Data Integration**: Sample data includes customer information with CRM references
+
+## �🚀 Features
+
+### Main CUA Application Features (`app.py`)
+- **Customer Lookup API**: RESTful API for customer information retrieval
+- **Agent Integration**: Interfaces with AI automation backend
+- **Session Management**: Handles lookup sessions and status tracking
+- **Real-time Status Updates**: Provides live updates during lookup process
+- **CRM Reference Extraction**: Extracts and returns CRM reference numbers
+
+### CRM Web Application Features (`CRM-UI/app.py`)
+- **Customer Management**: View, add, and manage customer profiles
+- **Account Management**: Track account balances, types, and status
+- **Loan Management**: Monitor active loans, EMIs, and payment schedules
+- **Transaction History**: Complete transaction tracking with references
+- **Dashboard Analytics**: Visual overview of bank operations
+- **Secure Authentication**: Login system with session management
+- **Responsive Design**: Bootstrap-based UI for all devices
 
 ### Frontend Features
 - **Customer Management**: View, add, and manage customer profiles
@@ -75,31 +114,44 @@ CUA/
    ```
 
 4. **Environment Configuration**
-   Copy the `.env` file and update it with your actual credentials:
+   Create your environment file from the template:
    ```bash
-   # The .env file is already provided with default settings
-   # Update the following key variables:
+   # Copy the template file
+   copy .env.example .env
+   
+   # Edit the .env file with your actual credentials:
    # - AZURE_OPENAI_API_KEY: Your Azure OpenAI API key
    # - AZURE_OPENAI_ENDPOINT: Your Azure OpenAI endpoint
    # - FLASK_SECRET_KEY: A secure secret key for Flask sessions
    # - ADMIN_USERNAME/ADMIN_PASSWORD: Change default login credentials
    ```
 
-## 🏃‍♂️ Running the Application
+## 🏃‍♂️ Running the Applications
 
-### Frontend (Web CRM)
+### Main CUA Application (Customer Lookup API)
 ```bash
-cd Frontend
 python app.py
 ```
-Access the application at: `http://localhost:5000`
+Access the API service at: `http://localhost:8080`
+
+This service provides:
+- Customer lookup functionality
+- Integration with AI automation backend
+- RESTful API endpoints for customer information retrieval
+
+### CRM-UI (Full Bank Management System)
+```bash
+cd CRM-UI
+python app.py
+```
+Access the web application at: `http://localhost:5000`
 
 **Default Login Credentials:**
 - Username: Set in `.env` file (`ADMIN_USERNAME`)
 - Password: Set in `.env` file (`ADMIN_PASSWORD`)
 - Default: admin/admin123 (change these in production!)
 
-### Backend (Automation)
+### Backend Automation
 ```bash
 cd "Backend - CUA"
 python globaltrustbank_cau.py
@@ -128,7 +180,7 @@ The application comes pre-loaded with sample data including:
 ## 🔧 Configuration
 
 ### Frontend Configuration
-- **Environment Variables**: Configure settings in `.env` file
+- **Environment Variables**: Configure settings in `.env` file (copy from `.env.example`)
 - **Secret Key**: Set `FLASK_SECRET_KEY` in `.env` for production security
 - **Debug Mode**: Set `FLASK_DEBUG=False` for production deployment
 - **Host/Port**: Configure `FLASK_HOST` and `FLASK_PORT` as needed
@@ -167,8 +219,17 @@ The application comes pre-loaded with sample data including:
 
 ## 📊 API Endpoints
 
-### Available APIs
+### Main CUA Application APIs (`app.py`)
+- `POST /api/start-lookup` - Start customer lookup process
+  - Parameters: `customer_id`, `username`, `password`
+  - Returns: `session_id` for tracking progress
+- `GET /api/status/<session_id>` - Get lookup status and results
+  - Returns: Status updates or final CRM reference number
+
+### CRM-UI Application APIs (`CRM-UI/app.py`)
 - `GET /api/customers` - Retrieve all customers
+- `GET /api/transactions` - Retrieve all transactions
+- All endpoints require authentication
 - `GET /api/transactions` - Retrieve all transactions
 - All endpoints require authentication
 

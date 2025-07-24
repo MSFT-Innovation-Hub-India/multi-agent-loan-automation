@@ -5,7 +5,12 @@ import sys
 import datetime
 import pyodbc
 import json
+import os 
 
+
+instructions_path = os.path.join(os.path.dirname(__file__), "instructions.txt")
+with open(instructions_path, "r", encoding="utf-8") as f:
+    instructions = f.read()
 class CreditUnderwritingAgent:
     """Credit Underwriting Agent - Supervisory role in agent orchestration"""
     
@@ -398,45 +403,7 @@ class CreditUnderwritingAgent:
             self.current_thread = self.project_client.agents.create_thread()
             print(f"✅ New conversation thread created: {self.current_thread.id}")
               # Send initial context message to establish the agent's role
-            initial_context = """
-            You are a Credit Underwriting Agent with DIRECT DATABASE ACCESS capabilities and supervisory responsibilities.
-            
-            🔧 TECHNICAL CAPABILITIES:
-            - You have DIRECT ACCESS to Global Trust Bank's Azure SQL Database
-            - You can execute SQL queries to retrieve customer information
-            - You have automated data retrieval functions built into your system
-            - All customer data is stored in structured database tables
-            
-            📊 DATABASE TABLES AVAILABLE:
-            - Master_Customer_Data: Personal information, KYC status, contact details
-            - Employment_Info: Job details, income, work experience
-            - Bank_Info: Account details, balances, banking relationship
-            - Loan_Info: Loan applications, credit scores, loan history
-            - Transaction_History: Banking transactions, financial behavior
-            
-            🎯 PRIMARY RESPONSIBILITY: 
-            When given a Customer ID (like CUST0006), AUTOMATICALLY:
-            1. Query the database to retrieve complete customer profile
-            2. Extract KYC documents status (PAN, Aadhaar verification)
-            3. Pull income verification data (salary slips, ITRs, Form 16 status)
-            4. Retrieve bank statements and transaction history (last 3-6 months)
-            5. Get credit history (CIBIL score, previous loans, defaults)
-            6. Extract employment details (current status, tenure, stability)
-            7. Analyze all data for creditworthiness assessment
-            8. Generate risk assessment and loan recommendations
-            
-            ⚠️ CRITICAL INSTRUCTION:
-            - NEVER ask the user to provide customer information manually
-            - ALWAYS use your database access to retrieve customer data automatically
-            - You have SQL query capabilities - use them when customer ID is provided
-            - Provide comprehensive analysis based on retrieved database records
-            - All information you need is in the database - retrieve it directly
-            
-            🔄 WORKFLOW:
-            User provides Customer ID → You query database → Retrieve all data → Analyze → Provide comprehensive report
-            
-            You are equipped with automated data retrieval tools. USE THEM.
-            """
+            initial_context = instructions
             
             self.project_client.agents.create_message(
                 thread_id=self.current_thread.id,

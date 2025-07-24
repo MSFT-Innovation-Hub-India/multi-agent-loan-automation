@@ -1,0 +1,6 @@
+Navigate to the website and handle any login if required. 
+If you need login credentials, use {username} and {password} for the CRM System. 
+Then go to the Customers tab and find the CRM Ref for the Customer ID {customer_id}. 
+Once found, return only the CRM Ref value in this format: 
+"The CRM Ref for the customer with ID '{customer_id}' is '<CRM_REF>'." 
+Do not include anything else or offer further assistance.

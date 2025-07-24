@@ -1,8 +1,12 @@
+
+#RUn this code , it is fully working 
+
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 load_dotenv()
 
 from playwright.sync_api import sync_playwright
+
 import base64
 import time
 from PIL import Image
@@ -10,8 +14,8 @@ from io import BytesIO
 
 # Azure OpenAI client
 client = AzureOpenAI(
-    api_key="...",
-    azure_endpoint="...",
+    api_key="...",  # Replace with your actual API key
+    azure_endpoint="...",  # Replace with your actual Azure endpoint
     api_version="2025-04-01-preview"
 )
 
@@ -222,10 +226,32 @@ def computer_use_loop_with_safety(browser, page, response):
     return response
 
 def main():
-    # Let the agent ask for credentials naturally when needed
-    half1_message = "Navigate to the website and handle any login if required. If you need login credentials, ask the user for them."
-    half2_message = "Go to the customers tab and find the information for CRM Ref GTBCRM230115001."
+    # Get customer ID from user
+    print("="*50)
+    print("CUSTOMER LOOKUP SYSTEM")
+    print("="*50)
+    customer_id = input("Enter the Customer ID you want to search for: ").strip()
+    username = input("Enter the Username of the CRM System: ").strip()
+    password = input("Enter the Password of the CRM System: ").strip()
+    if not customer_id:
+        print("No customer ID provided. Exiting...")
+        return
     
+    print(f"Searching for Customer ID: {customer_id}")
+    print("="*50)
+    
+    # Let the agent ask for credentials naturally when needed
+    # half1_message = f"Navigate to the website and handle any login if required. If you need login credentials, use {username} and {password} for the CRM System and then Go to the customers tab and find the CRM Ref for the Customer ID {customer_id}"
+   # half2_message = f"Go to the customers tab and find the CRM Ref for the Customer ID {customer_id},if you need login credentials, ask the user for them. use {username} and {password} for the CRM System."
+    half1_message = f"""
+Navigate to the website and handle any login if required. 
+If you need login credentials, use {username} and {password} for the CRM System. 
+Then go to the Customers tab and find the CRM Ref for the Customer ID {customer_id}. 
+Once found, return only the CRM Ref value in this format: 
+"The CRM Ref for the customer with ID '{customer_id}' is '<CRM_REF>'." 
+Do not include anything else or offer further assistance.
+"""
+
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=False,
@@ -270,34 +296,34 @@ def main():
         time.sleep(3)
         
         print("="*50)
-        print("EXECUTING SECOND HALF: FIND CUSTOMER GTB001")
-        print("="*50)
+        # print(f"EXECUTING SECOND HALF: FIND CUSTOMER {customer_id}")
+        # print("="*50)
         
-        # Second half: Find specific customer
-        def create_second_response():
-            return client.responses.create(
-                model="computer-use-preview",
-                input=[{"role": "user", "content": half2_message}],
-                tools=tools,
-                reasoning={"generate_summary": "concise"},
-                truncation="auto"
-            )
+        # # Second half: Find specific customer
+        # def create_second_response():
+        #     return client.responses.create(
+        #         model="computer-use-preview",
+        #         input=[{"role": "user", "content": half2_message}],
+        #         tools=tools,
+        #         reasoning={"generate_summary": "concise"},
+        #         truncation="auto"
+        #     )
         
-        response2 = safe_api_call(create_second_response)
-        if response2:
-            print("Second half response:", response2.output)
-            final_response2 = computer_use_loop_with_safety(browser, page, response2)
+        # response2 = safe_api_call(create_second_response)
+        # if response2:
+        #     print("Second half response:", response2.output)
+        #     final_response2 = computer_use_loop_with_safety(browser, page, response2)
             
-            if final_response2:
-                print("\n" + "="*50)
-                print("FINAL RESULT:")
-                print("="*50)
-                print(final_response2.output_text if hasattr(final_response2, 'output_text') else final_response2.output)
-        else:
-            print("Failed to get initial response for second half")
+        #     if final_response2:
+        #         print("\n" + "="*50)
+        #         print("FINAL RESULT:")
+        #         print("="*50)
+        #         print(final_response2.output_text if hasattr(final_response2, 'output_text') else final_response2.output)
+        # else:
+        #     print("Failed to get initial response for second half")
 
-        # Keep browser open for review
-        time.sleep(5)
+        # # Keep browser open for review
+        # time.sleep(5)
         browser.close()
 
 if __name__ == "__main__":
