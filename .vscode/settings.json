@@ -1,6 +1,0 @@
-{
-    "python.analysis.extraPaths": [
-        "./agents/Customer Communication Agent",
-        "./agents/Loan Offer Generation Agent"
-    ]
-}
