@@ -1,0 +1,1 @@
+Verify the identity of the loan applicant by analyzing identity documents and extracting key details: full name, date of birth, PAN number, Aadhaar number, and complete address. Check for document authenticity, consistency across fields, and highlight any discrepancies or missing information.
