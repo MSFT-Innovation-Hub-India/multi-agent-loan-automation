@@ -1,0 +1,318 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Agent Logging API",
+    "description": "REST API for agent logging and audit trail management. Supports agent activity logging to Azure Cosmos DB.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://cosmosconnection.azurewebsites.net"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Root",
+        "description": "Welcome endpoint for the Agent Logging API.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Health"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint that verifies Cosmos DB connectivity",
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/log": {
+      "post": {
+        "tags": [
+          "Logging"
+        ],
+        "summary": "Create Log Entry",
+        "description": "Create a new agent log entry.\n\nParameters:\n- customer_id: Customer identifier\n- agent_id: Agent identifier\n- description: Description of the log entry\n- status: Status of the operation\n\nReturns:\n- LogCreateResponse: Created log entry with unique ID and timestamp",
+        "operationId": "create_log_entry_log_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogEntry"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogCreateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/logs/{customer_id}": {
+      "get": {
+        "tags": [
+          "Logging"
+        ],
+        "summary": "Get Agent Logs",
+        "description": "Retrieve logs for a specific customer.\n\nParameters:\n- customer_id: Customer identifier\n\nReturns:\n- LogListResponse: List of log entries for the specified customer",
+        "operationId": "get_agent_logs_logs__customer_id__get",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LogListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LogCreateResponse": {
+        "properties": {
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "data": {
+            "$ref": "#/components/schemas/LogResponse"
+          }
+        },
+        "type": "object",
+        "required": [
+          "message",
+          "data"
+        ],
+        "title": "LogCreateResponse"
+      },
+      "LogEntry": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id",
+            "description": "Customer identifier"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id",
+            "description": "Agent identifier"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "Description of the log entry"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "description": "Status of the operation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "agent_id",
+          "description",
+          "status"
+        ],
+        "title": "LogEntry"
+      },
+      "LogListResponse": {
+        "properties": {
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "count": {
+            "type": "integer",
+            "title": "Count"
+          },
+          "logs": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Logs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_id",
+          "count",
+          "logs"
+        ],
+        "title": "LogListResponse"
+      },
+      "LogResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "title": "Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "agent_id": {
+            "type": "string",
+            "title": "Agent Id"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "timestamp": {
+            "type": "string",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "customer_id",
+          "agent_id",
+          "description",
+          "status",
+          "timestamp"
+        ],
+        "title": "LogResponse"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Logging",
+      "description": "Operations for agent logging"
+    },
+    {
+      "name": "Health",
+      "description": "Health check endpoints"
+    }
+  ]
+}

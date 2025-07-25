@@ -1,0 +1,514 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Loan Processing API",
+    "description": "REST API for loan processing and orchestration. Supports Aadhaar and PAN verification, and processes loan applications in Indian Rupees (₹).",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://applicationagentupdated.azurewebsites.net"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "root"
+        ],
+        "summary": "Read Root",
+        "description": "Welcome endpoint for the Loan Processing API.\n\nReturns:\n- Dict: Welcome message",
+        "operationId": "GetRoot",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint that verifies database connectivity.\n\nParameters:\n- db: Database session dependency\n\nReturns:\n- Dict: Health status with database connectivity information",
+        "operationId": "HealthCheck",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{customer_id}/summary": {
+      "get": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Get Customer Summary",
+        "description": "Get customer summary including loan history, income, and credit score.\n\nParameters:\n- customer_id: Unique identifier of the customer\n- db: Database session dependency\n\nReturns:\n- Dict: Customer profile with loan details and financial information",
+        "operationId": "GetCustomerSummary",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/search": {
+      "get": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Get Customer Id By Name",
+        "description": "Get Customer ID based on customer name.\n\nParameters:\n- name: Name of the customer to search for\n- db: Database session dependency\n\nReturns:\n- Dict: List of matching customers with their details",
+        "operationId": "GetCustomerIdByName",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/start-application/personal-details": {
+      "post": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Create Personal Details",
+        "description": "Create a new customer with personal details and generate a unique customer ID.\n\nParameters:\n- details: Personal details of the customer\n- db: Database session dependency\n\nReturns:\n- Dict: Created customer details with generated customer ID",
+        "operationId": "CreatePersonalDetails",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PersonalDetailsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{customer_id}/employment-details": {
+      "post": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Add Employment Details",
+        "description": "Add employment details for an existing customer.\nCollects company name, job title, and monthly income.\n\nParameters:\n- customer_id: Customer ID to add employment details for\n- details: Employment details (company_name, job_title, monthly_income)\n- db: Database session dependency\n\nReturns:\n- Dict: Added employment details",
+        "operationId": "AddEmploymentDetails",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmploymentDetailsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{customer_id}/loan-info": {
+      "post": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Add Loan Info",
+        "description": "Add loan application information for a customer.\nCollects desired loan amount, loan purpose, and tenure (15 or 30 years default).\n\nParameters:\n- customer_id: Customer ID to add loan info for\n- details: Loan application details (loan_amount, loan_purpose, tenure_years)\n- db: Database session dependency\n\nReturns:\n- Dict: Added loan application details",
+        "operationId": "AddLoanInfo",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoanApplicationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EmploymentDetailsRequest": {
+        "properties": {
+          "company_name": {
+            "type": "string",
+            "title": "Company Name"
+          },
+          "job_title": {
+            "type": "string",
+            "title": "Job Title"
+          },
+          "monthly_income": {
+            "type": "number",
+            "title": "Monthly Income"
+          }
+        },
+        "type": "object",
+        "required": [
+          "company_name",
+          "job_title",
+          "monthly_income"
+        ],
+        "title": "EmploymentDetailsRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoanApplicationRequest": {
+        "properties": {
+          "loan_amount": {
+            "type": "number",
+            "title": "Loan Amount"
+          },
+          "loan_purpose": {
+            "type": "string",
+            "title": "Loan Purpose"
+          },
+          "tenure_years": {
+            "type": "integer",
+            "title": "Tenure Years",
+            "default": 15
+          },
+          "loan_required": {
+            "type": "string",
+            "title": "Loan Required",
+            "default": "Yes"
+          },
+          "application_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Application Date"
+          },
+          "loan_status": {
+            "type": "string",
+            "title": "Loan Status",
+            "default": "PENDING"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loan_amount",
+          "loan_purpose"
+        ],
+        "title": "LoanApplicationRequest"
+      },
+      "PersonalDetailsRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "fathers_name": {
+            "type": "string",
+            "title": "Fathers Name"
+          },
+          "dob": {
+            "type": "string",
+            "format": "date",
+            "title": "Dob"
+          },
+          "age": {
+            "type": "integer",
+            "title": "Age"
+          },
+          "gender": {
+            "type": "string",
+            "title": "Gender"
+          },
+          "marital_status": {
+            "type": "string",
+            "title": "Marital Status"
+          },
+          "address": {
+            "type": "string",
+            "title": "Address"
+          },
+          "city": {
+            "type": "string",
+            "title": "City"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "pincode": {
+            "type": "integer",
+            "title": "Pincode"
+          },
+          "mobile": {
+            "type": "integer",
+            "title": "Mobile"
+          },
+          "alternate_mobile": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alternate Mobile"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "nationality": {
+            "type": "string",
+            "title": "Nationality"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "fathers_name",
+          "dob",
+          "age",
+          "gender",
+          "marital_status",
+          "address",
+          "city",
+          "state",
+          "pincode",
+          "mobile",
+          "email",
+          "nationality"
+        ],
+        "title": "PersonalDetailsRequest"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "ExecuteFunction",
+      "description": "Operations for loan processing and orchestration"
+    },
+    {
+      "name": "root",
+      "description": "Root endpoint operations"
+    },
+    {
+      "name": "health",
+      "description": "Health check operations"
+    },
+    {
+      "name": "Application",
+      "description": "Operations for loan application process including personal, employment, and loan details"
+    }
+  ]
+}

@@ -1,0 +1,298 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Loan Processing API",
+    "description": "REST API for loan processing and orchestration. Supports Aadhaar and PAN verification, and processes loan applications in Indian Rupees (₹).",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://loanauditagent.azurewebsites.net"
+    }
+  ],
+  "paths": {
+    "/api/audit-records": {
+      "post": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Create Audit Record",
+        "description": "Create a new audit record.\nReturns the created audit record as confirmation.",
+        "operationId": "CreateAuditRecord",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuditRecordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audit-records/{customer_id}": {
+      "get": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Get Audit Records As Json",
+        "description": "Get all audit records for a customer as a JSON array (not a string).\nReturns the records sorted by event time.",
+        "operationId": "GetAuditRecordsAsJson",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "tags": [
+          "root"
+        ],
+        "summary": "Read Root",
+        "description": "Welcome endpoint for the Loan Processing API.\n\nReturns:\n- Dict: Welcome message",
+        "operationId": "GetRoot",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint that verifies database connectivity.\n\nParameters:\n- db: Database session dependency\n\nReturns:\n- Dict: Health status with database connectivity information",
+        "operationId": "HealthCheck",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/search": {
+      "get": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Get Customer Id By Name",
+        "description": "Get Customer ID based on customer name.\n\nParameters:\n- name: Name of the customer to search for\n- db: Database session dependency\n\nReturns:\n- Dict: List of matching customers with their details",
+        "operationId": "GetCustomerIdByName",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuditRecordRequest": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "audit_type": {
+            "type": "string",
+            "title": "Audit Type"
+          },
+          "audit_status": {
+            "type": "string",
+            "title": "Audit Status"
+          },
+          "auditor_name": {
+            "type": "string",
+            "title": "Auditor Name"
+          },
+          "remarks": {
+            "type": "string",
+            "title": "Remarks"
+          },
+          "follow_up_required": {
+            "type": "string",
+            "title": "Follow Up Required"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "audit_type",
+          "audit_status",
+          "auditor_name",
+          "remarks",
+          "follow_up_required"
+        ],
+        "title": "AuditRecordRequest"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "ExecuteFunction",
+      "description": "Operations for loan processing and orchestration"
+    },
+    {
+      "name": "root",
+      "description": "Root endpoint operations"
+    },
+    {
+      "name": "health",
+      "description": "Health check operations"
+    },
+    {
+      "name": "Eligibility",
+      "description": "Loan eligibility and qualification operations"
+    }
+  ]
+}
