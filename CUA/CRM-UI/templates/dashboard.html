@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Global Trust Bank CRM{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1 class="h3 mb-0">Dashboard</h1>
+        <p class="text-muted">Welcome to Global Trust Bank CRM System</p>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ total_customers }}</h4>
+                        <p class="card-text">Total Customers</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">{{ active_customers }}</h4>
+                        <p class="card-text">Active Customers</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-user-check fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">₹{{ "{:,.0f}".format(total_balance/100000) }}L</h4>
+                        <p class="card-text">Total Deposits</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-rupee-sign fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">₹{{ "{:,.0f}".format(total_loans/100000) }}L</h4>
+                        <p class="card-text">Total Loans</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-hand-holding-usd fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Transactions -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Transactions</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_transactions %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Type</th>
+                                <th>Amount</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for transaction in recent_transactions %}
+                            <tr>
+                                <td>{{ transaction.date }}</td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if transaction.type == 'Deposit' else 'danger' if transaction.type == 'Withdrawal' else 'info' }}">
+                                        {{ transaction.type }}
+                                    </span>
+                                </td>
+                                <td>₹{{ "{:,.0f}".format(transaction.amount) }}</td>
+                                <td>{{ transaction.description }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted">No recent transactions found.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('add_customer_form') }}" class="btn btn-primary">
+                        <i class="fas fa-user-plus me-2"></i>Add New Customer
+                    </a>
+                    <a href="{{ url_for('customer_list') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-users me-2"></i>View All Customers
+                    </a>                    <a href="{{ url_for('loan_list') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-hand-holding-usd me-2"></i>View All Loans
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">System Info</h5>
+            </div>
+            <div class="card-body">
+                <p class="mb-1"><strong>Bank:</strong> Global Trust Bank</p>
+                <p class="mb-1"><strong>System:</strong> CRM v1.0</p>
+                <p class="mb-0"><strong>Status:</strong> <span class="text-success">Online</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
