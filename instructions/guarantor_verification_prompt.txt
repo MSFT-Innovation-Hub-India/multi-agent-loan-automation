@@ -1,1 +1,0 @@
-Verify the guarantor information for the loan application by analyzing the provided call recording of the guarantor verification. Extract and summarize the guarantor's full name, relationship to the applicant, financial standing, and supporting statements. Assess the guarantor's eligibility and cross-reference with known applicant details from previous checks.
