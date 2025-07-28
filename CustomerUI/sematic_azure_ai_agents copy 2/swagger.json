@@ -1,0 +1,295 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Loan Processing API",
+    "description": "REST API for loan processing and orchestration. Supports Aadhaar and PAN verification, and processes loan applications in Indian Rupees (₹).",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://prequalification.azurewebsites.net"
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "tags": [
+          "root"
+        ],
+        "summary": "Read Root",
+        "description": "Welcome endpoint for the Loan Processing API.\n\nReturns:\n- Dict: Welcome message",
+        "operationId": "GetRoot",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Health Check",
+        "description": "Health check endpoint that verifies database connectivity.\n\nParameters:\n- db: Database session dependency\n\nReturns:\n- Dict: Health status with database connectivity information",
+        "operationId": "HealthCheck",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{customer_id}/summary": {
+      "get": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Get Customer Summary",
+        "description": "Get customer summary including loan history, income, and credit score.\n\nParameters:\n- customer_id: Unique identifier of the customer\n- db: Database session dependency\n\nReturns:\n- Dict: Customer profile with loan details and financial information",
+        "operationId": "GetCustomerSummary",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{customer_id}/eligibility": {
+      "get": {
+        "tags": [
+          "Eligibility"
+        ],
+        "summary": "Get Home Loan Eligibility",
+        "description": "Estimate home loan eligibility based on monthly income, credit score, age, and existing EMIs.\n\nParameters:\n- customer_id: Unique customer ID\n\nReturns:\n- Dict with eligible loan amount, interest rate, and fixed tenure",
+        "operationId": "GetHomeLoanEligibility",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/loan/discovery-steps": {
+      "get": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Get Discovery Steps",
+        "description": "Get loan discovery steps based on customer status, verifying all relevant table data.\n\nParameters:\n- customer_id: Unique identifier of the customer\n- db: Database session dependency\n\nReturns:\n- Dict: Customized loan discovery steps based on customer profile",
+        "operationId": "GetLoanDiscoverySteps",
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/search": {
+      "get": {
+        "tags": [
+          "ExecuteFunction"
+        ],
+        "summary": "Get Customer Id By Name",
+        "description": "Get Customer ID based on customer name.\n\nParameters:\n- name: Name of the customer to search for\n- db: Database session dependency\n\nReturns:\n- Dict: List of matching customers with their details",
+        "operationId": "GetCustomerIdByName",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "ExecuteFunction",
+      "description": "Operations for loan processing"
+    },
+    {
+      "name": "root",
+      "description": "Root endpoint operations"
+    },
+    {
+      "name": "health",
+      "description": "Health check operations"
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "identity": {
+    "agent_type": "identity",
+    "status": "completed",
+    "response": "**PENDING:** Identity verification requires: Aadhaar, PAN",
+    "error": null
+  },
+  "income": {
+    "agent_type": "income",
+    "status": "completed",
+    "response": "**DETAILS:**\nMonthly Salary: ₹75,000\nEmployment: Salaried\nCompany: Saraf, Pai & Murthy Pvt. Ltd.\nExperience: 1 year\nStability: Consistently employed with regular income\n\n**ANALYSIS:**\nIncome verification: Verified\nSalary consistency: High (consistent credits across months in bank statement)\nEmployment stability: Stable\nDTI ratio: 35% (based on average expenses observed in bank statement)\nRisk: Low\n\n**SUMMARY:**\nStatus: PASS - Applicant demonstrates stable income and employment adequacy suitable for financial eligibility.",
+    "error": null
+  },
+  "guarantor": {
+    "agent_type": "guarantor",
+    "status": "completed",
+    "response": "**DETAILS:**\nName: Deepika N\nRelationship: Husband (to applicant, Kala Diwan)\nContact: Verified via call\nCall Found: Yes\n\n**ANALYSIS:**\nConsent: Explicit\nFinancial capability: Discussed (income INR 48,000/month, no active loans/EMIs)\nUnderstanding: Clear (acknowledged financial liability in case of default)\nRed flags: None identified\nCall quality: Clear\n\n**SUMMARY:**\nStatus: PASS - Deepika N is qualified and willing to act as guarantor, demonstrating clear understanding, explicit consent, and sufficient financial stability.",
+    "error": null
+  },
+  "inspection": {
+    "agent_type": "inspection",
+    "status": "completed",
+    "response": "**DETAILS:**\nVideo Found: yes  \nInterior: good  \nConstruction: modern  \nIssues: None visible from footage  \n\n**ANALYSIS:**\nProperty condition: Excellent and attractive for residential use  \nStructural integrity: Appears sturdy based on visual review  \nMaintenance level: Well-maintained  \nRisk level: Low  \nConfidence: 9  \n\n**SUMMARY:**\nStatus: PASS - The modern design, cleanliness, and good layout support its suitability as collateral. The absence of visible damages adds positive value.",
+    "error": null
+  },
+  "valuation": {
+    "agent_type": "valuation",
+    "status": "completed",
+    "response": "**DETAILS:**\nProperty Area: 33 sq ft\nLocation: Udupi, Karnataka\nLast Sale Price: ₹700,000 (Year: 2004)\nCurrent Market Rate: ₹2,512/sq ft\nEstimated Value: ₹82,896\nLoan Amount: ₹50,000\n\n**ANALYSIS:**\nLTV Ratio: 60.3%\nMarket assessment: Undervalued\nLocation premium: Medium\nComparable properties: ₹2,500 - ₹3,000/sq ft\nRisk: Low\n\n**SUMMARY:**\nStatus: PASS - Property valuation and LTV ratio comply; suitable as loan collateral.",
+    "error": null
+  }
+}

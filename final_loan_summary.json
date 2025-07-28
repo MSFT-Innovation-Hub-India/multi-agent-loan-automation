@@ -1,0 +1,55 @@
+{
+  'loan_evaluation_summary': {
+    'final_decision': 'CONDITIONAL',
+    'overall_risk_score': '3',
+    'confidence_level': 'MEDIUM',
+    'key_findings': {
+      'strengths': [
+        'Stable employment with consistent monthly salary of ₹75,000',
+        'Low DTI ratio of 35%',
+        'Qualified and willing guarantor with sufficient financial stability (₹48,000 income/month and no active liabilities)',
+        'Property condition rated excellent with no visible structural issues',
+        'LTV ratio of 60.3% indicating manageable collateral risk'
+      ],
+      'concerns': [
+        'Identity verification not completed - Aadhaar and PAN are still pending',
+        'Property valuation appears to be undervalued based on market rate comparison'
+      ],
+      'missing_items': [
+        'Aadhaar and PAN documents for identity verification'
+      ]
+    },
+    'detailed_assessment': {
+      'identity_status': 'PENDING - Aadhaar and PAN required to complete identity verification',
+      'income_status': 'PASS - Applicant demonstrates stable income, regular salary credits, and adequate financial eligibility',
+      'guarantor_status': 'PASS - Guarantor exhibits financial stability, explicit consent, and understanding of liability',
+      'property_status': 'PASS - Property inspection confirms excellent condition for residential use with low structural risk',
+      'collateral_status': 'PASS - Property valuation and LTV ratio are within acceptable limits, but valuation appears low relative to market rates'
+    },
+    'financial_summary': {
+      'applicant_income': '₹75,000/month',
+      'property_value': '₹82,896',
+      'loan_to_value_ratio': '60.3%',
+      'debt_service_coverage': 'Strong - Applicant demonstrates ability to service loan with current income and DTI ratio'
+    },
+    'recommendations': {
+      'immediate_actions': [
+        'Submit Aadhaar and PAN documents to complete identity verification'
+      ],
+      'conditions_for_approval': [
+        'Identity verification must be satisfactorily completed',
+        'Clarification or reassessment on property valuation to ensure accuracy of market value'
+      ],
+      'risk_mitigation': [
+        'Retain a strong guarantor for added safety in case of loan default',
+        'Verify property valuation with additional market comparables or third-party opinion to bolster confidence'
+      ]
+    },
+    'next_steps': [
+      'Applicant to provide Aadhaar and PAN documents promptly',
+      'Reassess property valuation to confirm market rate accuracy if feasible',
+      'Consider conditional approval while pending identity verification and valuation reassessment'
+    ],
+    'summary_notes': 'The applicant demonstrates strong financial stability, adequate guarantor backing, and low risk based on income and DTI ratio. Property collateral and LTV ratio are acceptable, but undervaluation warrants secondary review. Identity documents missing; conditional approval recommended contingent on submission of Aadhaar and PAN and additional clarification on property value reliability.'
+  }
+}
