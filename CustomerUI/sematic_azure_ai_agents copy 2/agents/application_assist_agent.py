@@ -67,6 +67,21 @@ async def create_application_assist_agent(client):
         )
         tools = tools + audit_tool.definitions
     
+    # Load customer updates API
+    customer_updates_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "customerupadtes.json")
+    if os.path.exists(customer_updates_path):
+        with open(customer_updates_path, "r") as f:
+            customer_updates_spec = json.load(f)
+        
+        auth = OpenApiAnonymousAuthDetails()
+        customer_updates_tool = OpenApiTool(
+            name="customer_updates_api",
+            spec=customer_updates_spec,
+            description="API for updating customer progress and agent completion status throughout the loan process",
+            auth=auth,
+        )
+        tools = tools + customer_updates_tool.definitions
+    
     # Create agent definition
     agent_definition = await client.agents.create_agent(
         model=ai_agent_settings.model_deployment_name,
