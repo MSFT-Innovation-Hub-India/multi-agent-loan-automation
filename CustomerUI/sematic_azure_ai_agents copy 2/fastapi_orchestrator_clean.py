@@ -198,9 +198,6 @@ class APIOrchestrator:
             elif agent_name == "ApplicationAssistAgent":
                 agent_id = "application_assist_agent"
                 agent_type = "application"
-            elif agent_name == "LoanStatusCheckAgent":
-                agent_id = "loan_status_check_agent"
-                agent_type = "loan_status_check"
             else:
                 agent_id = "orchestrator"
                 agent_type = "orchestrator"

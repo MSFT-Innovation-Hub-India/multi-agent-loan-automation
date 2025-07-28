@@ -23,7 +23,6 @@ from loan_agent_selector import LoanAgentSelector
 # Import agent creation functions
 from agents.prequalification_agent import create_prequalification_agent
 from agents.application_assist_agent import create_application_assist_agent
-from agents.loanstatuscheck import create_loan_status_check_agent
 from agents.audit_agent import create_audit_agent
 
 # Import database components
@@ -61,13 +60,10 @@ async def create_agents(client):
         print("📝 Creating ApplicationAssistAgent...")
         application_assist_agent = await create_application_assist_agent(client)
         
-        print("📊 Creating LoanStatusCheckAgent...")
-        loan_status_check_agent = await create_loan_status_check_agent(client)
-        
-        print("🛡️ Creating AuditAgent...")
+        print("️ Creating AuditAgent...")
         audit_agent = await create_audit_agent(client)
         
-        return [prequalification_agent, application_assist_agent, loan_status_check_agent, audit_agent]
+        return [prequalification_agent, application_assist_agent, audit_agent]
         
     except Exception as e:
         print(f"❌ Error creating agents: {e}")
@@ -239,7 +235,8 @@ class FinalLoanOrchestrator:
         print("=" * 60)
         print("💡 Try these inputs:")
         print("  • 'I want to check eligibility' → Prequalification Agent")
-        print("  • 'I want to apply for a loan' → Application Agent")
+        print("  • 'I want to apply for a loan' → Application Agent (also handles status checks)")
+        print("  • 'show my loan status' → Application Agent (status checking)")
         print("  • 'yes please proceed' (after eligibility check) → Switch to Application Agent")
         print("  • 'documents uploaded successfully' → Continue with current agent")
         print("  • 'quit' to exit")
@@ -247,6 +244,7 @@ class FinalLoanOrchestrator:
         print("🔧 Enhanced with retry logic and timeout handling")
         print("⏰ Agent responses shown immediately")
         print("🛡️ Complete audit process shown after application submission")
+        print("📊 ApplicationAssistAgent now handles both applications AND status checks")
         print("� Automated email notifications for stages 1-3 after audit completion")
         print("   Stage 1: Application submission confirmation")
         print("   Stage 2: Document upload instructions")

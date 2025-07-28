@@ -48,6 +48,21 @@ async def create_audit_agent(client):
             auth=auth,
         )
 
+        # Load customer updates API
+        customer_updates_path = os.path.join(current_dir, "customerupadtes.json")
+        with open(customer_updates_path, "r") as f:
+            customer_updates_spec = json.load(f)
+        
+        customer_updates_tool = OpenApiTool(
+            name="customer_updates_api",
+            spec=customer_updates_spec,
+            description="API for updating customer progress and agent completion status throughout the loan process",
+            auth=auth,
+        )
+
+        # Combine all tools
+        all_tools = audit_api_tool.definitions + customer_updates_tool.definitions
+
         # Get agent settings
         ai_agent_settings = AzureAIAgentSettings()
 
@@ -56,7 +71,7 @@ async def create_audit_agent(client):
             model=ai_agent_settings.model_deployment_name,
             name=AGENT_NAME,
             instructions=instructions,
-            tools=audit_api_tool.definitions,
+            tools=all_tools,
         )
 
         # Create the AzureAI Agent
