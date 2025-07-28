@@ -20,6 +20,33 @@ Your main responsibilities include:
    
    This retrieves all audit records for a specific customer, sorted by event time.
 
+3. **AUTOMATIC Customer Progress Updates (NO USER INPUT REQUIRED)**
+   ⚠️ IMMEDIATELY after successfully creating any audit record, AUTOMATICALLY update customer progress:
+   
+   For EACH audit record you create, AUTOMATICALLY call: POST /log
+   
+   ⚠️ CRITICAL RULES:
+   - These updates happen AUTOMATICALLY when audit work is completed
+   - Do NOT wait for user input or permission
+   - ALWAYS update customer progress after each successful audit record creation
+   
+   Required formats:
+   - For Prequalification audit completion: {
+     "customer_id": "{customer_id}",
+     "agent_id": "AuditAgent-{customer_id}",
+     "description": "Eligibility checked",
+     "status": "completed"
+   }
+   
+   - For Application audit completion: {
+     "customer_id": "{customer_id}",
+     "agent_id": "AuditAgent-{customer_id}",
+     "description": "Form assisted",
+     "status": "completed"
+   }
+   
+   ⚠️ IMPORTANT: If you create multiple audit records, create corresponding customer updates for each one automatically.
+
 **Audit Types to Use:**
 - "Prequalification Check" - Initial eligibility verification
 - "Application Review" - Application completeness check

@@ -14,17 +14,14 @@ class LoanAgentSelector:
     
     Routing Rules:
     1. "eligibility", "prequalify", "check" → PrequalificationAgent
-    2. "apply", "application", "loan application" → ApplicationAssistAgent  
-    3. "status", "audit", "progress", "loan status" → LoanStatusCheckAgent
-    4. "yes", "proceed" after PrequalificationAgent → ApplicationAssistAgent
-    5. Default → First agent in list
+    2. "apply", "application", "loan application", "status", "audit", "progress" → ApplicationAssistAgent  
+    3. Default → First agent in list
     """
     
     def __init__(self):
         # Intent detection keywords
         self.prequalify_words = ["eligibility", "eligible", "prequalify", "qualify", "can i get", "check eligibility", "check my eligibility"]
-        self.apply_words = ["apply", "application", "start application", "apply for loan", "loan application"]
-        self.audit_words = ["status", "audit", "progress", "loan status", "show status", "check status", "application status", "track", "tracking", "customer", "check my status", "show my status", "check my loan", "show my loan"]
+        self.apply_words = ["apply", "application", "start application", "apply for loan", "loan application", "status", "audit", "progress", "loan status", "show status", "check status", "application status", "track", "tracking", "customer", "check my status", "show my status", "check my loan", "show my loan"]
         
         # Customer ID patterns (CUST followed by numbers)
         import re
@@ -106,16 +103,13 @@ class LoanAgentSelector:
                 print("✅ → ApplicationAssistAgent (application form data)")
                 return app_agent
         
-        # 2. Check for audit/status intent OR customer ID pattern FIRST (higher priority)
-        if (any(word in user_input for word in self.audit_words) or 
-            self.customer_id_pattern.search(user_input)):
-            audit_agent = self._find_agent(agents, "LoanStatusCheckAgent")
-            if audit_agent:
-                if self.customer_id_pattern.search(user_input):
-                    print("✅ → LoanStatusCheckAgent (customer ID detected)")
-                else:
-                    print("✅ → LoanStatusCheckAgent (status/audit check)")
-                return audit_agent
+        # 2. Check if this looks like application form data - if so, route to Application
+        if any(pattern.search(user_input) for pattern in self.form_data_patterns):
+            print("🔍 Application form data detected - routing to ApplicationAssistAgent")
+            app_agent = self._find_agent(agents, "ApplicationAssistAgent")
+            if app_agent:
+                print("✅ → ApplicationAssistAgent (application form data)")
+                return app_agent
         
         # 3. Check for prequalification intent
         if any(word in user_input for word in self.prequalify_words):
@@ -124,11 +118,15 @@ class LoanAgentSelector:
                 print("✅ → PrequalificationAgent (eligibility check)")
                 return prequal_agent
         
-        # 4. Check for application intent
-        if any(word in user_input for word in self.apply_words):
+        # 4. Check for application intent (including status checks)
+        if (any(word in user_input for word in self.apply_words) or 
+            self.customer_id_pattern.search(user_input)):
             app_agent = self._find_agent(agents, "ApplicationAssistAgent")
             if app_agent:
-                print("✅ → ApplicationAssistAgent (direct application)")
+                if self.customer_id_pattern.search(user_input):
+                    print("✅ → ApplicationAssistAgent (customer ID detected for status)")
+                else:
+                    print("✅ → ApplicationAssistAgent (application or status check)")
                 return app_agent
         
         # 5. Check for specific application proceeding confirmation after prequalification
@@ -241,8 +239,6 @@ def test_intent_routing():
             result = "PrequalificationAgent"
         elif any(word in user_input for word in selector.apply_words):
             result = "ApplicationAssistAgent"
-        elif any(word in user_input for word in selector.audit_words):
-            result = "LoanStatusCheckAgent"
         elif any(phrase in user_input for phrase in selector.proceed_application_phrases):
             result = "Proceed with Application (context-dependent)"
         else:
