@@ -1,7 +1,7 @@
 from azure.ai.projects import AIProjectClient
 from azure.ai.projects.models import ConnectedAgentTool
 from azure.identity import DefaultAzureCredential
-from config import *
+from DocumentsVerifierBAckend.config import *
 
 def create_controller_agent(client, identity_agent, income_agent, guarantor_agent, valuation_agent):
     connected_tools = [

@@ -80,7 +80,7 @@ async def initialize_evaluation_system():
         print("🔧 Loading configuration...")
         
         # Import config here to catch any import errors
-        from config import ENDPOINT, RESOURCE_GROUP, SUBSCRIPTION_ID, PROJECT_NAME
+        from DocumentsVerifierBAckend.config import ENDPOINT, RESOURCE_GROUP, SUBSCRIPTION_ID, PROJECT_NAME
         print(f"   Endpoint: {ENDPOINT}")
         print(f"   Resource Group: {RESOURCE_GROUP}")
         print(f"   Project: {PROJECT_NAME}")
@@ -399,7 +399,7 @@ async def generate_summary_only():
 async def system_diagnostics():
     """Get system diagnostic information"""
     try:
-        from config import ENDPOINT, RESOURCE_GROUP, SUBSCRIPTION_ID, PROJECT_NAME, INDEXES
+        from DocumentsVerifierBAckend.config import ENDPOINT, RESOURCE_GROUP, SUBSCRIPTION_ID, PROJECT_NAME, INDEXES
         
         diagnostics = {
             "config_loaded": True,
