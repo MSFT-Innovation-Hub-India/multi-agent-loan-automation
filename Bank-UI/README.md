@@ -183,13 +183,6 @@ Update `app.py` to modify:
 - Secure WebSocket communications
 - Input validation and sanitization
 
-## Browser Compatibility
-
-### Supported Browsers
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
 
 ### Required Features
 - WebSocket support
