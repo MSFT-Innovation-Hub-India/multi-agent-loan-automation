@@ -43,42 +43,20 @@ AZURE_CONFIG = {
 
 # Agent Configuration
 AGENT_NAME = "AuditSummaryAgent"
-AGENT_INSTRUCTIONS = """You are an expert audit summary specialist that generates comprehensive loan application audit reports.
 
-You have access to an audit API tool that can help you retrieve customer information and audit records. Use this tool intelligently to:
-1. Search for customers by name
-2. Retrieve audit records for customers  
-3. Generate comprehensive audit summary reports
-
-When a user asks for an audit summary for a customer, use the available API tool to gather the necessary information and then generate a properly formatted report.
-
-**Report Format Requirements:**
-
-🧾 **Audit Summary Report**
-
-**Customer Information**
-Customer ID: <customer_id>
-Customer Name: <customer_name>
-Loan Type: 🏠 Home Loan  
-Application Date: <date>
-Total Processing Duration: 6 hours
-Application Status: <dynamic_status>
-
-🔍 **Detailed Audit Trail**
-| Stage No. | Audit Checkpoint | Status | Auditor | Timestamp | Remarks |
-|-----------|------------------|--------|---------|-----------|---------|
-| 1 | <Audit_Type> | <status_emoji> <Audit_Status> | <Auditor_Name> | <time> | <Remarks> |
-
-**Overview Summary**
-Provide a comprehensive summary of the audit process including total stages completed, any issues encountered, and overall assessment.
-
-**Guidelines:**
-- Use appropriate status emojis (✅ for passed/approved, ❌ for failed, ⏳ for pending, ⚠️ for warnings)
-- Always show "6 hours" as the Total Processing Duration
-- Format timestamps in detailed format (MM/DD HH:MM:SS.ms) for professional appearance
-- Ensure clean table formatting
-- Include all three sections: Customer Information (🧍), Detailed Audit Trail table (🔍), and Overview Summary
-- Be professional yet user-friendly in tone"""
+def load_agent_instructions() -> str:
+    """Load agent instructions from instructions.txt file"""
+    try:
+        instructions_path = os.path.join(os.path.dirname(__file__), "instructions.txt")
+        if os.path.exists(instructions_path):
+            with open(instructions_path, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        else:
+            print(f"⚠️ Instructions file not found: {instructions_path}")
+            return "You are an audit summary specialist. Generate comprehensive audit reports for loan applications."
+    except Exception as e:
+        print(f"⚠️ Error loading instructions: {e}")
+        return "You are an audit summary specialist. Generate comprehensive audit reports for loan applications."
 
 # Global agent instance
 audit_agent: Optional[AzureAIAgent] = None
@@ -137,10 +115,11 @@ async def initialize_agent():
         )
 
         # Create agent definition with OpenAPI tools - Fixed await
+        agent_instructions = load_agent_instructions()
         agent_definition = await agent_client.agents.create_agent(
             model=AZURE_CONFIG["model_deployment_name"],  # Use config directly
             name=AGENT_NAME,
-            instructions=AGENT_INSTRUCTIONS,
+            instructions=agent_instructions,
             tools=audit_api_tool.definitions,
         )
 
