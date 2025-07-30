@@ -11,11 +11,6 @@ The AuditUI is a specialized web-based interface designed for generating compreh
 - **Audit Trail Tracking**: Complete audit history and compliance tracking
 - **Status Monitoring**: Real-time audit status updates and progress tracking
 
-### 📊 Real-Time Interface
-- Interactive audit request interface
-- Real-time report generation with live updates
-- Professional audit report formatting with emojis and tables
-
 ### 🤖 AI-Powered Features
 - **Azure AI Agent Integration**: Powered by Semantic Kernel and Azure AI Projects
 - **Intelligent Data Processing**: Automated audit data analysis and formatting
@@ -73,19 +68,6 @@ cd multi-agent-loan-automation/AuditUI
 # Navigate to AuditUI directory
 cd AuditUI
 pip install -r requirements.txt
-```
-
-Create a `requirements.txt` file if not present:
-```txt
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
-python-dotenv==1.0.0
-azure-identity==1.15.0
-semantic-kernel==1.0.0
-azure-ai-projects==1.0.0b3
-aiofiles==23.2.1
-python-multipart==0.0.6
 ```
 
 #### 2.2 Create Backend Environment File
@@ -165,55 +147,6 @@ Open your browser and navigate to `http://localhost:3001`
    - **Customer Information**: ID, name, loan details, and application status
    - **Detailed Audit Trail**: Complete audit history with timestamps and status
    - **Overview Summary**: Comprehensive analysis and recommendations
-
-## API Documentation
-
-### Backend Endpoints
-
-The FastAPI backend provides the following key endpoints:
-
-- `POST /api/audit/generate` - Generate audit summary for customer
-- `GET /health` - Health check endpoint
-- `GET /` - Root endpoint with API information
-
-## Troubleshooting
-
-### Common Issues
-
-#### Backend Won't Start
-1. **Check Python Version**: Ensure Python 3.8+ is installed
-2. **Install Dependencies**: Run `pip install -r requirements.txt`
-3. **Environment Variables**: Verify all required variables are set in `.env`
-4. **Port Conflicts**: Ensure port 8001 is available
-
-#### Frontend Won't Start
-1. **Check Node.js Version**: Ensure Node.js 18+ is installed
-2. **Install Dependencies**: Run `npm install` in the frontend directory
-3. **Environment Variables**: Verify `.env.local` file exists and is configured
-4. **Port Conflicts**: Ensure port 3001 is available
-
-#### Connection Issues
-1. **Backend Connection**: Check if backend is running on port 8001
-2. **CORS Issues**: Verify CORS settings in FastAPI configuration
-3. **Network Firewall**: Ensure ports 3001 and 8001 are accessible
-4. **API Keys**: Verify Azure AI credentials are correct
-
-#### Agent Issues
-1. **Instructions Loading**: Check if `instructions.txt` file exists
-2. **API Specification**: Verify `audit_agent.json` is properly formatted
-3. **Azure Connection**: Confirm Azure AI Project connection string is valid
-4. **Model Access**: Ensure GPT-4o-mini deployment is accessible
-
-### Debug Mode
-Enable detailed logging by setting:
-```bash
-# In backend .env file
-LOG_LEVEL=debug
-
-# Check browser console for frontend errors
-```
-
-## Development
 
 ### File Structure
 ```
