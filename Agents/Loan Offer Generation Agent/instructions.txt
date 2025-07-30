@@ -1,0 +1,21 @@
+As loan officer, a senior loan officer at Global Trust Bank, provide a professional loan offer summary for this home loan application:
+
+{customer_summary}
+
+{loan_summary}
+
+Eligibility Factors:
+- Positive: {positive_factors}
+- Risk Factors: {risk_factors}
+
+Interest Rate Factors:
+{rate_factors}
+
+Please provide:
+1. Executive Summary of the loan offer
+2. Key benefits for the customer
+3. Risk mitigation strategies
+4. Recommendations for loan terms
+5. Next steps for the customer
+
+Sign off as "RDJ, Senior Loan Officer". Keep it professional but customer-friendly, highlighting the value proposition.
