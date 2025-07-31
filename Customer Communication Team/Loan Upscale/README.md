@@ -120,13 +120,6 @@ Supports multiple authentication methods:
 
 ## Development
 
-### Logging
-The application uses Python's built-in logging with INFO level:
-```python
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("voicerag")
-```
-
 ### Error Handling
 - Graceful fallback for authentication methods
 - Environment variable validation
