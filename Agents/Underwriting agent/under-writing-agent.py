@@ -388,9 +388,9 @@ class CreditUnderwritingAgent:
             # Initialize AI agent
             self.project_client = AIProjectClient.from_connection_string(
                 credential=DefaultAzureCredential(),
-                conn_str="eastus2.api.azureml.ms;aee23923-3bba-468d-8dcd-7c4bc1ce218f;rg-ronakofficial1414-9323_ai;ronakofficial1414-8644")
+                conn_str="XXXX")
 
-            self.agent = self.project_client.agents.get_agent("asst_GIAVHYJZj8teaZ5MriOttU7g")
+            self.agent = self.project_client.agents.get_agent("XXXX")
             self.session_start_time = datetime.datetime.now()
             return True
         except Exception as e:
