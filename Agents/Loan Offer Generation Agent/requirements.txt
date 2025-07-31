@@ -1,0 +1,13 @@
+# Azure AI and Identity packages
+azure-ai-projects==1.0.0b10
+azure-identity==1.15.0
+
+# Database connectivity
+pyodbc==5.0.1
+
+# HTTP requests
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
+

@@ -1,0 +1,13 @@
+# Azure AI and Authentication
+azure-ai-projects==1.0.0b10
+azure-identity==1.15.0
+azure-core==1.29.5
+
+# Database Connectivity
+pyodbc==5.0.1
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# JSON and Data Handling
+requests==2.31.0

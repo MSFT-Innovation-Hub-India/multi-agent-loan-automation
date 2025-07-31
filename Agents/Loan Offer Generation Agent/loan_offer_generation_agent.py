@@ -8,12 +8,17 @@ from datetime import datetime, timedelta
 from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
-# Azure SQL Database connection configuration
-SERVER = "XXXX"
-DATABASE = "XXXX"
-USERNAME = "XXXX"
-PASSWORD = "XXXX"
+import os
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
+
+# Azure SQL Database connection configuration
+SERVER = os.getenv("DB_SERVER")
+DATABASE = os.getenv("DB_DATABASE")
+USERNAME = os.getenv("DB_USERNAME")
+PASSWORD = os.getenv("DB_PASSWORD")
 # Loan Assessment Parameters
 LOAN_PARAMETERS = {
     "HOME_LOAN": {

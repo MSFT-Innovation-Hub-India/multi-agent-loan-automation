@@ -5,9 +5,10 @@ import sys
 import datetime
 import pyodbc
 import json
-import os 
+import os
+from dotenv import load_dotenv
 
-
+load_dotenv()
 instructions_path = os.path.join(os.path.dirname(__file__), "instructions.txt")
 with open(instructions_path, "r", encoding="utf-8") as f:
     instructions = f.read()
@@ -25,10 +26,10 @@ class CreditUnderwritingAgent:
         """Initialize Azure SQL Database connection"""
         try:
             # Global Trust Bank Azure SQL Database connection
-            server = 'XXXX'
-            database = 'XXXX'
-            username = 'XXXX'
-            password = 'XXXX'
+            server = os.getenv('DB_SERVER')
+            database = os.getenv('DB_DATABASE')
+            username = os.getenv('DB_USERNAME')
+            password = os.getenv('DB_PASSWORD')
             driver = '{ODBC Driver 18 for SQL Server}'
             
             connection_string = f'DRIVER={driver};SERVER={server};DATABASE={database};UID={username};PWD={password};Encrypt=yes;TrustServerCertificate=no;Connection Timeout=30;'

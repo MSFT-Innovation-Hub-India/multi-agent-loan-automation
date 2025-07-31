@@ -10,7 +10,7 @@ This documentation covers the five core files that make up the Custom Agent syst
 |-----------|---------|------------------|
 | `custom_agent_functions.py` | Core business logic functions | API calls, loan processing, email sending |
 | `custom_agent_tools.py` | Tool definitions for AI agent | Schema definitions, parameter validation |
-| `custom_template_agent.py` | Main agent runner | Agent initialization, conversation handling |
+| `agent.py` | Main agent runner | Agent initialization, conversation handling |
 | `email_templates.py` | Email template management | HTML templates, stage mapping |
 | `template_config.py` | Configuration and metadata | Stage definitions, utilities |
 
@@ -160,7 +160,7 @@ This documentation covers the five core files that make up the Custom Agent syst
 
 ### Example Usage:
 ```bash
-python custom_template_agent.py
+python agent.py
 ```
 
 ### Key Features:
