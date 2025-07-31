@@ -448,9 +448,9 @@ def generate_ai_loan_summary(customer_data, collateral_info, loan_details, eligi
         # Initialize AI client
         project_client = AIProjectClient.from_connection_string(
             credential=DefaultAzureCredential(),
-            conn_str="eastus2.api.azureml.ms;aee23923-3bba-468d-8dcd-7c4bc1ce218f;rg-ronakofficial1414-9323_ai;ronakofficial1414-8644")
+            conn_str="XXXX")
         
-        agent = project_client.agents.get_agent("asst_UViec1zMTXPMHlyzawp0lei2")
+        agent = project_client.agents.get_agent("XXXX")
         thread = project_client.agents.create_thread()
         
         # Prepare data for AI analysis
