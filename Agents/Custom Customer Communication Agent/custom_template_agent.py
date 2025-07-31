@@ -14,10 +14,10 @@ from email_templates import map_stage_to_template
 # Initialize the Azure AI Project client
 project_client = AIProjectClient.from_connection_string(
     credential=DefaultAzureCredential(),
-    conn_str="eastus2.api.azureml.ms;aee23923-3bba-468d-8dcd-7c4bc1ce218f;rg-ronakofficial1414-9323_ai;ronakofficial1414-8644")
+    conn_str="XXXX")
 
 # Get the agent
-agent = project_client.agents.get_agent("asst_eo3eOzKI2Sk7NlezVZU35rL8")
+agent = project_client.agents.get_agent("XXXX")
 
 instructions_path = os.path.join(os.path.dirname(__file__), "instructions.txt")
 with open(instructions_path, "r", encoding="utf-8") as f:
