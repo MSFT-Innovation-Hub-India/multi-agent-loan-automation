@@ -1,0 +1,310 @@
+/* Enhanced Modal Content Styling for Agent Details */
+
+/* CSS Reset for Table Elements to Prevent Conflicts */
+.modal-content table,
+.modal-content thead,
+.modal-content tbody,
+.modal-content tr,
+.modal-content th,
+.modal-content td {
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border-spacing: 0 !important;
+    border-collapse: separate !important;
+}
+
+/* Override the existing modal content with enhanced styles */
+.modal-content {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    color: #1f2937;
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Custom scrollbar for modal content */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+    border-radius: 4px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #2563eb, #1e40af);
+}
+
+/* Enhanced text formatting */
+.modal-content strong {
+    color: #1e40af;
+    font-weight: 600;
+}
+
+.modal-content h1, 
+.modal-content h2, 
+.modal-content h3 {
+    margin: 0.5rem 0;
+    color: #1e40af;
+}
+
+/* Agent section styling */
+.modal-content .agent-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 2rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.modal-content .agent-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+}
+
+.modal-content .agent-section h3 {
+    margin: 0 0 1rem 0;
+    color: #2d3748;
+    font-size: 1.4rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.modal-content .agent-section h4 {
+    margin: 1.5rem 0 1rem 0;
+    color: #4a5568;
+    font-size: 1.2rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #edf2f7 0%, #e2e8f0 100%);
+    border-radius: 12px;
+    border-left: 4px solid #667eea;
+}
+
+/* Step styling */
+.modal-content .step-item {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.75rem 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.modal-content .step-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: #3b82f6;
+}
+
+.modal-content .step-item::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #10b981, #059669);
+    border-radius: 0 2px 2px 0;
+}
+
+/* Work log section styling */
+.modal-content .work-log-section {
+    background: linear-gradient(135deg, #f0fdf4 0%, #f7fee7 100%);
+    border: 1px solid #bbf7d0;
+    border-radius: 10px;
+    padding: 1.25rem;
+    margin: 1rem 0;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.1);
+    position: relative;
+}
+
+.modal-content .work-log-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #10b981, #059669);
+}
+
+/* Entry item styling */
+.modal-content .entry-item {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.modal-content .entry-item:hover {
+    border-color: #10b981;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
+}
+
+/* Emoji and icon styling */
+.modal-content .emoji {
+    font-size: 1.2em;
+    margin-right: 0.5rem;
+    vertical-align: middle;
+}
+
+/* Divider styling */
+.modal-content hr,
+.modal-content .divider {
+    border: none;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+    margin: 1.5rem 0;
+    border-radius: 2px;
+}
+
+/* Status indicators */
+.modal-content .status-success {
+    color: #059669;
+    background: #ecfdf5;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #bbf7d0;
+}
+
+.modal-content .status-error {
+    color: #dc2626;
+    background: #fef2f2;
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #fecaca;
+}
+
+/* Typography enhancements */
+.modal-content p {
+    margin: 0.75rem 0;
+    color: #4b5563;
+    font-size: 0.95rem;
+}
+
+.modal-content ul {
+    padding-left: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.modal-content li {
+    margin: 0.5rem 0;
+    color: #4b5563;
+    position: relative;
+}
+
+.modal-content li::marker {
+    color: #3b82f6;
+}
+
+/* Special formatting for structured content */
+.modal-content .activity-field {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 0.75rem;
+    margin: 0.5rem 0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.875rem;
+}
+
+.modal-content .activity-field strong {
+    color: #1e40af;
+    display: inline-block;
+    min-width: 80px;
+}
+
+/* Animation for content */
+.modal-content .animate-in {
+    animation: slideInUp 0.3s ease-out;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .modal-content {
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .modal-content .agent-section,
+    .modal-content .work-log-section {
+        padding: 1rem;
+        margin: 0.75rem 0;
+    }
+    
+    .modal-content .step-item,
+    .modal-content .entry-item {
+        padding: 0.75rem;
+    }
+}
+
+/* Loading state */
+.modal-content.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+}
+
+.modal-content.loading::after {
+    content: '';
+    width: 32px;
+    height: 32px;
+    border: 3px solid #e5e7eb;
+    border-top: 3px solid #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}

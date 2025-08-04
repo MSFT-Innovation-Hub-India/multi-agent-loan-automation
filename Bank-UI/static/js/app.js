@@ -139,7 +139,8 @@ class BankingAgentSystem {
             const categoryDiv = document.createElement('div');
             categoryDiv.className = 'agent-category expanded';
             categoryDiv.innerHTML = `
-                <div class="category-header" style="background: ${category.color}20; border-left: 4px solid ${category.color}"
+                
+                <div class="category-header" style="background: #e5f4fe; border-left: 4px solid #0369a1"
                      onclick="toggleAgentCategory('${categoryKey}')">
                     <div class="category-info">
                         <span class="category-name">${category.name}</span>
@@ -999,4 +1000,88 @@ function toggleCategory(categoryKey) {
             icon.classList.toggle('fa-chevron-down');
         }
     }
+}
+
+// Modal functionality for detailed descriptions
+function showDetailModal(rowId, detailedDescription) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('detailModal');
+    if (!modal) {
+        modal = createDetailModal();
+        document.body.appendChild(modal);
+    }
+    
+    // Set the content
+    const modalBody = modal.querySelector('.detail-modal-body');
+    
+    // Check if this is formatted content (contains \\n for line breaks)
+    if (detailedDescription.includes('\\n')) {
+        // Convert \\n to actual line breaks and format the content
+        const formattedContent = detailedDescription
+            .replace(/\\n/g, '\n')
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+        modalBody.innerHTML = `<div style="white-space: pre-wrap; line-height: 1.6;">${formattedContent}</div>`;
+    } else {
+        // Simple content
+        modalBody.innerHTML = `<p style="line-height: 1.6;">${detailedDescription}</p>`;
+    }
+    
+    // Show the modal
+    modal.style.display = 'block';
+    
+    // Add event listeners for closing
+    const closeBtn = modal.querySelector('.detail-modal-close');
+    const modalContent = modal.querySelector('.detail-modal-content');
+    
+    closeBtn.onclick = function() {
+        closeDetailModal();
+    };
+    
+    modal.onclick = function(event) {
+        if (event.target === modal) {
+            closeDetailModal();
+        }
+    };
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDetailModal();
+        }
+    });
+}
+
+function createDetailModal() {
+    const modal = document.createElement('div');
+    modal.id = 'detailModal';
+    modal.className = 'detail-modal';
+    
+    modal.innerHTML = `
+        <div class="detail-modal-content">
+            <div class="detail-modal-header">
+                <h3>📋 Detailed Description</h3>
+                <button class="detail-modal-close">&times;</button>
+            </div>
+            <div class="detail-modal-body">
+                <!-- Content will be inserted here -->
+            </div>
+        </div>
+    `;
+    
+    return modal;
+}
+
+function closeDetailModal() {
+    const modal = document.getElementById('detailModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+    
+    // Remove event listener
+    document.removeEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDetailModal();
+        }
+    });
 }

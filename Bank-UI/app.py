@@ -7,28 +7,28 @@ import sys
 import os
 import requests
 from azure.cosmos import CosmosClient, exceptions
-import os
+
 # Add the parent directory to Python path to import the Underwriting agent
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Agent workflow order for guidance messages
 AGENT_WORKFLOW_ORDER = [
-    ('application_assist', 'Customer Service Agent', 'Loan Documentation Agent'),
-    ('document_checker', 'Loan Documentation Agent', 'Credit Liability Agent'),
-    ('pre_qualification', 'Credit Liability Agent', 'Credit Risk and Underwriting Agent'),
-    ('Underwriting', 'Credit Risk and Underwriting Agent', 'Credit Appraisal Agent'),
-    ('credit_assessor', 'Credit Appraisal Agent', 'Property Valuation Agent'),
-    ('valuation', 'Property Valuation Agent', 'Audit Agent'),
+    ('application_assist', 'Customer Service Agent', 'Document Verification Agent'),
+    ('document_checker', 'Document Checker Agent', 'Credit Qualification Agent'),
+    ('pre_qualification', 'Credit Qualification Agent', 'Credit Risk and Underwriting Agent'),
+    ('underwriting', 'Credit Risk and Underwriting Agent', 'Credit Assessment Agent'),
+    ('credit_assessor', 'Credit Assessment Agent', 'Asset Valuation Agent'),
+    ('valuation', 'Asset Valuation Agent', 'Audit Agent'),
     ('audit', 'Audit Agent', 'Customer Relationship Agent'),
     ('customer_communication', 'Customer Relationship Agent', 'Offer Generation Agent'),
     ('offer_generation', 'Offer Generation Agent', None)  # Last agent in workflow
 ]
 
 # CosmosDB Configuration
-COSMOS_URI = os.environ.get("COSMOS_URI")
-COSMOS_KEY = os.environ.get("COSMOS_KEY")
-DATABASE_NAME = os.environ.get("DATABASE_NAME")
-CONTAINER_NAME = os.environ.get("CONTAINER_NAME")
+COSMOS_URI = "https://globaltrustbank.documents.azure.com:443/"
+COSMOS_KEY = "EPcG6JzbLnWUNyIGZRSvCLiAypzsU3GBqEO8E7ZlqKVwRLHXHKrkniFMKFfwCJc8qS3jfdlmJVhFACDb8bHG5Q=="
+DATABASE_NAME = "LoanProcessingDB"
+CONTAINER_NAME = "AgentLogs"
 
 # Initialize Cosmos client
 try:
@@ -74,6 +74,48 @@ def normalize_agent_name(agent_name):
         return 'Audit Agent'
     else:
         return agent_name
+
+def get_agent_descriptions(customer_id, agent_name=None):
+    """Fetch agent descriptions from CosmosDB for a specific customer"""
+    if not cosmos_container:
+        print("⚠️ CosmosDB not available, returning empty descriptions")
+        return []
+    
+    try:
+        # SQL query to get agent descriptions for a specific customer
+        query = """
+        SELECT *
+        FROM c
+        WHERE c.agent_id = @agent_id
+        """
+        
+        # Query parameters
+        parameters = [{"name": "@agent_id", "value": f"{customer_id}-agent"}]
+        
+        # Run query
+        items = list(cosmos_container.query_items(
+            query=query,
+            parameters=parameters,
+            enable_cross_partition_query=True
+        ))
+        
+        # Process items to extract agent descriptions
+        agent_descriptions = {}
+        for item in items:
+            item_agent_name = item.get('agent_name', 'Unknown Agent')
+            agent_description = item.get('agent_description', [])
+            
+            # Store the description array for each agent
+            agent_descriptions[item_agent_name] = agent_description
+            
+            print(f"🔍 Found descriptions for agent: {item_agent_name} ({len(agent_description)} entries)")
+        
+        print(f"📊 Found agent descriptions for {len(agent_descriptions)} agents for customer {customer_id}")
+        return agent_descriptions
+        
+    except Exception as e:
+        print(f"❌ Error fetching agent descriptions from CosmosDB: {e}")
+        return {}
 
 def get_agent_work_logs(customer_id):
     """Fetch agent work logs from CosmosDB for a specific customer"""
@@ -172,7 +214,7 @@ def get_agent_logs_by_agent_type(customer_id, agent_name):
             log.timestamp
         FROM c
         JOIN log IN c.work_log
-        WHERE c.customer_id = @customer_id AND c.agent_id = @agent_name
+        WHERE c.customer_id = @customer_id
         """
         
         parameters = [
@@ -222,6 +264,21 @@ def get_agent_logs_by_agent_type(customer_id, agent_name):
     except Exception as e:
         print(f"❌ Error fetching agent-specific logs: {e}")
         return []
+
+def get_cosmos_agent_name_for_ui_agent(ui_agent_name):
+    """Map UI agent names to CosmosDB agent names"""
+    mapping = {
+        'Customer Service Agent': 'ApplicationAssist Agent',
+        'Document Verification Agent': 'Document Checker Agent',  # Fixed: added space
+        'Credit Qualification Agent': 'PreQualification Agent',
+        'Asset Valuation Agent': 'Valuation Agent',
+        'Credit Assessment Agent': 'CreditAssessor Agent',
+        'Credit Risk and Underwriting Agent': 'Underwriting Agent',
+        'Offer Generation Agent': 'OfferGeneration Agent',
+        'Customer Relationship Agent': 'CustomerCommunication Agent',
+        'Audit Agent': 'Audit Agent'  # Assuming this stays the same
+    }
+    return mapping.get(ui_agent_name, ui_agent_name)
 
 def trigger_missing_documents_email(customer_id):
     """Trigger the missing documents email API"""
@@ -273,7 +330,7 @@ class EnhancedBankingSystem:
                 'description': 'Initial application and document processing',
                 'agents': {
                     'pre_qualification': {
-                        'name': 'Credit Liability Agent',
+                        'name': 'Credit Qualification Agent',
                         'status': 'available',
                         'description': 'Screens the customer’s basic eligibility before initiating the loan application process.',
                         'icon': '🎯',
@@ -847,46 +904,133 @@ def process_agent_message(agent_type, message, app_id):
     application = application_workflows.get(app_id, {})
     agent_details = application.get('agent_details', {})
     
-    # If we have pre-loaded agent details for this agent type, use them
+    # If we have pre-loaded agent details for this agent type, use them BUT still add the button
     if agent_type in agent_details:
         agent_detail = agent_details[agent_type]
         if agent_detail.get('has_data', False):
             print(f"✅ Using pre-loaded CosmosDB data for {agent_type}")
-            return agent_detail['work_history_text']
+            
+            # Get the pre-loaded work history but enhance it with our button
+            base_response = agent_detail['work_history_text']
+            
+            # Get the agent name from banking_system for the query
+            agent_info = banking_system.agents.get(agent_type, {})
+            agent_name = agent_info.get('name', None)
+            
+            # Also get agent descriptions for the modal (filtered by agent name)
+            agent_descriptions = get_agent_descriptions(customer_id, agent_name)
+            
+            # Prepare the detailed information for the modal
+            modal_content = ""
+            
+            # Add agent descriptions if available
+            if agent_descriptions:
+                modal_content += "<div class='agent-section animate-in'>\\n"
+                modal_content += "<h3><span class='emoji'>🤖</span>Agent Detailed Activities</h3>\\n"
+                
+                # Get the CosmosDB agent name for the current UI agent
+                cosmos_agent_name = get_cosmos_agent_name_for_ui_agent(agent_name)
+                
+                # Filter to show only the current agent's descriptions
+                if cosmos_agent_name in agent_descriptions:
+                    descriptions = agent_descriptions[cosmos_agent_name]
+                    modal_content += f"<h4><span class='emoji'>📊</span>{cosmos_agent_name}</h4>\\n"
+                    
+                    # Use existing agent-logs-table CSS class
+                    modal_content += "<table class='agent-logs-table'>\\n"
+                    modal_content += "<thead>\\n"
+                    modal_content += "<tr>\\n"
+                    modal_content += "<th>#</th>\\n"
+                    modal_content += "<th>Activity Description</th>\\n"
+                    modal_content += "</tr>\\n"
+                    modal_content += "</thead>\\n"
+                    modal_content += "<tbody>\\n"
+                    
+                    for i, desc in enumerate(descriptions, 1):
+                        modal_content += f"<tr>\\n"
+                        modal_content += f"<td>{i}</td>\\n"
+                        modal_content += f"<td>{desc}</td>\\n"
+                        modal_content += f"</tr>\\n"
+                    
+                    modal_content += "</tbody>\\n"
+                    modal_content += "</table>\\n"
+                    
+                else:
+                    modal_content += f"<div class='status-error'><span class='emoji'>❌</span>No detailed activities found for {agent_name}</div>\\n"
+                
+                modal_content += "</div>\\n"
+            
+            # If no content, add a default message
+            if not modal_content:
+                modal_content = "**📋 Application Details**\\n\\nNo detailed information available at this time."
+            
+            # Escape the modal content for JavaScript
+            escaped_modal_content = modal_content.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
+            
+            # Add the Get Details button to the pre-loaded response
+            if not '<button' in base_response:  # Only add if not already present
+                button_html = f'<div style="text-align: center; margin: 20px 0; padding: 20px;">'
+                button_html += f'<button class="get-details-btn" onclick="showDetailModal(\'all_details_{customer_id}\', \'{escaped_modal_content}\')" style="cursor: pointer;">Get Details</button>'
+                button_html += '</div>'
+                
+                # Insert the button before the closing </div> tag if it exists, otherwise append
+                if '</div>' in base_response:
+                    enhanced_response = base_response.replace('</div>', button_html + '</div>', 1)
+                else:
+                    enhanced_response = base_response + button_html
+                
+                print(f"🔧 DEBUG: Enhanced pre-loaded response with button for {agent_type}")
+                return enhanced_response
+            else:
+                return base_response
         else:
             print(f"📋 No CosmosDB data available for {agent_type}")
-            return f"📋 **No Data Available**\n\nNo work logs found for this agent and customer {customer_id}."
-    else:
-        # Fallback: Try to get real work logs from CosmosDB for this agent
+            # Still continue to the main logic to get fresh data
+    
+    # Main logic for fetching fresh data
+        # Fetch data from both queries regardless of agent type
         cosmos_logs = []
+        agent_descriptions = {}
+        
         if customer_id != 'UNKNOWN':
             try:
-                # Map agent types to CosmosDB agent names
+                # First query: Get work logs for this agent
                 agent_name_mapping = {
-                    'pre_qualification': 'Pre-Qualification Agent',
-                    'document_checker': 'Document Checker Agent', 
-                    'application_assist': 'Application Assist Agent',
-                    'valuation': 'Valuation Agent',
-                    'credit_assessor': 'Credit Assessor Agent',
-                    'Underwriting': 'Underwriting agent',  # Updated to match CosmosDB format
-                    'offer_generation': 'Offer Generation Agent',
-                    'customer_communication': 'Customer Communication Agent',
-                    'audit': 'Audit Agent'
+                    'pre_qualification': 'PreQualificationAgent',
+                    'document_checker': 'DocumentCheckerAgent', 
+                    'application_assist': 'ApplicationAssistAgent',
+                    'valuation': 'ValuationAgent',
+                    'credit_assessor': 'CreditAssessorAgent',
+                    'Underwriting': 'UnderwritingAgent',
+                    'offer_generation': 'OfferGenerationAgent',
+                    'customer_communication': 'CustomerCommunicationAgent',
+                    'audit': 'AuditAgent'
                 }
                 
                 cosmos_agent_name = agent_name_mapping.get(agent_type)
                 if cosmos_agent_name:
                     cosmos_logs = get_agent_logs_by_agent_type(customer_id, cosmos_agent_name)
+                
+                # Get the agent name from banking_system for the query
+                agent_info = banking_system.agents.get(agent_type, {})
+                agent_name = agent_info.get('name', None)
+                
+                # Second query: ALWAYS get agent descriptions (filtered by agent name)
+                agent_descriptions = get_agent_descriptions(customer_id, agent_name)
+                print(f"🔍 Fetched {len(cosmos_logs)} work logs and {len(agent_descriptions)} agent descriptions for {customer_id}")
+                print(f"🔍 Queried agent descriptions for agent: {agent_name}")
                     
             except Exception as e:
-                print(f"⚠️ Error fetching CosmosDB logs for {agent_type}: {e}")
+                print(f"⚠️ Error fetching CosmosDB data for {agent_type}: {e}")
         
-        # If we have real logs from CosmosDB, format and return them            if cosmos_logs:
-                log_text = f"📊 **Application Progress Update**\n\n"
-                log_text += f"**Customer:** {customer_id}\n\n"
-            
-            # Create HTML table format for better display, wrapped in a div with no extra spacing
-            log_text += '<div class="agent-logs-container">'
+        # Create response with data from both queries
+        log_text = f"📊 **Application Progress Update**\n\n"
+        log_text += f"**Customer:** {customer_id}\n\n"
+        
+        # Create HTML table format for better display
+        log_text += '<div class="agent-logs-container">'
+        
+        if cosmos_logs:
             log_text += '<table class="agent-logs-table">'
             log_text += '<thead><tr><th>#</th><th>Details</th><th>Date</th></tr></thead>'
             log_text += '<tbody>'
@@ -896,26 +1040,101 @@ def process_agent_message(agent_type, message, app_id):
                 timestamp = log['timestamp']
                 log_text += f'<tr><td>{i}</td><td>{description}</td><td>{timestamp}</td></tr>'
             
-            log_text += '</tbody></table></div>'
-            
-            log_text += f"*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
-            
-            # Add guidance for next agent
-            next_agent_name = None
-            for agent_key, current_name, next_name in AGENT_WORKFLOW_ORDER:
-                if agent_key == agent_type:
-                    next_agent_name = next_name
-                    break
-            
-            if next_agent_name:
-                log_text += f"\n\n**Next Step:** Select **{next_agent_name}** for the next updates."
-            else:
-                log_text += f"\n\n**Workflow Complete:** This is the final step in the loan processing workflow."
-            
-            return log_text
+            log_text += '</tbody></table>'
         else:
-            print(f"📋 No CosmosDB data found for {agent_type}")
-            return f"📋 **No Data Available**\n\nNo work logs found for this agent and customer {customer_id}."
+            log_text += '<p style="text-align: center; color: #666; margin: 20px 0;">No recent work log entries found for this agent.</p>'
+        
+        # ALWAYS add "Get Details" button - prepare modal content
+        modal_content = ""
+        
+        # Add agent descriptions if available
+        if agent_descriptions:
+            modal_content += "<div class='agent-section animate-in'>\\n"
+            modal_content += "<h3><span class='emoji'>🤖</span>Agent Detailed Activities</h3>\\n"
+            
+            # Get the CosmosDB agent name for the current UI agent
+            cosmos_agent_name = get_cosmos_agent_name_for_ui_agent(agent_name)
+            
+            # Filter to show only the current agent's descriptions
+            if cosmos_agent_name in agent_descriptions:
+                descriptions = agent_descriptions[cosmos_agent_name]
+                modal_content += f"<h4><span class='emoji'>📊</span>{cosmos_agent_name}</h4>\\n"
+                
+                # Use existing agent-logs-table CSS class
+                modal_content += "<table class='agent-logs-table'>\\n"
+                modal_content += "<thead>\\n"
+                modal_content += "<tr>\\n"
+                modal_content += "<th>#</th>\\n"
+                modal_content += "<th>Activity Description</th>\\n"
+                modal_content += "</tr>\\n"
+                modal_content += "</thead>\\n"
+                modal_content += "<tbody>\\n"
+                
+                for i, desc in enumerate(descriptions, 1):
+                    modal_content += f"<tr>\\n"
+                    modal_content += f"<td>{i}</td>\\n"
+                    modal_content += f"<td>{desc}</td>\\n"
+                    modal_content += f"</tr>\\n"
+                
+                modal_content += "</tbody>\\n"
+                modal_content += "</table>\\n"
+                
+            else:
+                modal_content += f"<div class='status-error'><span class='emoji'>❌</span>No detailed activities found for {agent_name}</div>\\n"
+            
+            modal_content += "</div>\\n"
+        
+        # Add work log information if available
+        if cosmos_logs:
+            if agent_descriptions:
+                modal_content += "<hr class='divider'>\\n"
+            
+            modal_content += "<div class='work-log-section animate-in'>\\n"
+            modal_content += "<h3><span class='emoji'>📋</span>Work Log Summary</h3>\\n"
+            
+            for i, log in enumerate(cosmos_logs, 1):
+                modal_content += f"<div class='entry-item'>\\n"
+                modal_content += f"<strong><span class='emoji'>📌</span>Entry {i}:</strong>\\n"
+                modal_content += f"<div class='activity-field'><strong>Activity:</strong> {log['description']}</div>\\n"
+                modal_content += f"<div class='activity-field'><strong>Date:</strong> {log['timestamp']}</div>\\n"
+                modal_content += f"<div class='activity-field'><strong>Status:</strong> {log['status']}</div>\\n"
+                modal_content += f"</div>\\n"
+            
+            modal_content += "</div>\\n"
+        
+        # If no content from either query, add a default message
+        if not modal_content:
+            modal_content = "<div class='status-error'><span class='emoji'>📋</span>Application Details</div><br><p>No detailed information available at this time.</p>"
+        
+        # Escape the modal content for JavaScript
+        escaped_modal_content = modal_content.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
+        
+        # ALWAYS add the Get Details button - make it very visible for debugging
+        log_text += f'<div style="text-align: center; margin: 20px 0; padding: 20px;">'
+        log_text += f'<button class="get-details-btn" onclick="showDetailModal(\'all_details_{customer_id}\', \'{escaped_modal_content}\')" style="cursor: pointer;">Get Details</button>'
+        log_text += '</div>'
+        log_text += '</div>'
+        
+        print(f"🔧 DEBUG: Generated button HTML for customer {customer_id}")
+        print(f"🔧 DEBUG: Modal content length: {len(modal_content)}")
+        print(f"🔧 DEBUG: Agent descriptions found: {len(agent_descriptions)}")
+        print(f"🔧 DEBUG: Cosmos logs found: {len(cosmos_logs)}")
+        
+        log_text += f"\n*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
+        
+        # Add guidance for next agent
+        next_agent_name = None
+        for agent_key, current_name, next_name in AGENT_WORKFLOW_ORDER:
+            if agent_key == agent_type:
+                next_agent_name = next_name
+                break
+        
+        if next_agent_name:
+            log_text += f"\n\n**Next Step:** Select **{next_agent_name}** for the next updates."
+        else:
+            log_text += f"\n\n**Workflow Complete:** This is the final step in the loan processing workflow."
+        
+        return log_text
 
 @app.route('/api/applications/search')
 def search_applications():
@@ -968,6 +1187,7 @@ def search_applications():
                     logs_by_agent[agent_name].append({
                         'status': log['status'],
                         'description': log['description'],
+                        'detailed_description': log.get('detailed_description', ''),
                         'timestamp': log['timestamp']
                     })
                 
@@ -975,15 +1195,15 @@ def search_applications():
                 
                 # Pre-populate agent details with work history for all agents
                 agent_name_mapping = {
-                    'Pre-Qualification Agent': 'pre_qualification',
-                    'Document Checker Agent': 'document_checker',
-                    'Application Assist Agent': 'application_assist',
-                    'Valuation Agent': 'valuation',
-                    'Credit Assessor Agent': 'credit_assessor',
-                    'Underwriting agent': 'Underwriting',  # Exact match for CosmosDB format (lowercase)
-                    'Offer Generation Agent': 'offer_generation',
-                    'Customer Communication Agent': 'customer_communication',
-                    'Audit Agent': 'audit'
+                    f'PreQualificationAgent-{customer_id}': 'pre_qualification',
+                    f'DocumentCheckerAgent-{customer_id}': 'document_checker',
+                    f'ApplicationAssistAgent-{customer_id}': 'application_assist',
+                    f'ValuationAgent-{customer_id}': 'valuation',
+                    f'CreditAssessorAgent-{customer_id}': 'credit_assessor',
+                    f'UnderwritingAgent-{customer_id}': 'Underwriting',
+                    f'OfferGenerationAgent-{customer_id}': 'offer_generation',
+                    f'CustomerCommunicationAgent-{customer_id}': 'customer_communication',
+                    f'AuditAgent-{customer_id}': 'audit'
                 }
                 
                 print(f"🗺️ Agent name mapping: {agent_name_mapping}")
@@ -1007,12 +1227,52 @@ def search_applications():
                         work_history_text += '<thead><tr><th>#</th><th>Details</th><th>Date</th></tr></thead>'
                         work_history_text += '<tbody>'
                         
+                        # Collect all detailed descriptions for the modal
+                        detailed_info = []
+                        
                         for i, log in enumerate(agent_logs, 1):
                             description = log['description']
+                            detailed_description = log.get('detailed_description', '')
                             timestamp = log['timestamp']
+                            
                             work_history_text += f'<tr><td>{i}</td><td>{description}</td><td>{timestamp}</td></tr>'
+                            
+                            # Collect detailed description if it exists
+                            if detailed_description:
+                                # Handle different types of detailed_description
+                                if isinstance(detailed_description, dict):
+                                    detail_text = str(detailed_description)
+                                elif isinstance(detailed_description, str):
+                                    detail_text = detailed_description
+                                else:
+                                    detail_text = str(detailed_description)
+                                
+                                detailed_info.append({
+                                    'step': i,
+                                    'description': description,
+                                    'detailed_description': detail_text,
+                                    'timestamp': timestamp
+                                })
                         
-                        work_history_text += '</tbody></table></div>'
+                        work_history_text += '</tbody></table>'
+                        
+                        # Add single "Get Details" button at the bottom if there are any detailed descriptions
+                        if detailed_info:
+                            # Prepare the detailed information for the modal
+                            modal_content = ""
+                            for detail in detailed_info:
+                                modal_content += f"**Step {detail['step']}: {detail['description']}**\\n"
+                                modal_content += f"Date: {detail['timestamp']}\\n"
+                                modal_content += f"Details: {detail['detailed_description']}\\n\\n"
+                            
+                            # Escape the modal content for JavaScript
+                            escaped_modal_content = modal_content.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
+                            
+                            work_history_text += f'<div style="text-align: center; margin-top: 15px;">'
+                            work_history_text += f'<button class="get-details-btn" onclick="showDetailModal(\'all_details_{customer_id}_{agent_type}\', \'{escaped_modal_content}\')" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">📋 Get Details</button>'
+                            work_history_text += '</div>'
+                        
+                        work_history_text += '</div>'
                         
                         work_history_text += f"\n*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
                         
@@ -1096,21 +1356,21 @@ def search_applications():
                     logs_by_agent[agent_name].append({
                         'status': log['status'],
                         'description': log['description'],
+                        'detailed_description': log.get('detailed_description', ''),
                         'timestamp': log['timestamp']
                     })
                 
                 # Pre-populate agent details with work history for all agents
                 agent_name_mapping = {
-                    'Pre-Qualification Agent': 'pre_qualification',
-                    'Document Checker Agent': 'document_checker',
-                    'Application Assist Agent': 'application_assist',
-                    'Valuation Agent': 'valuation',
-                    'Credit Assessor Agent': 'credit_assessor',
-                    'Underwriting agent': 'Underwriting',  # Updated to match CosmosDB format
-                    'Underwriting Agent': 'Underwriting',   # Keep both for backward compatibility
-                    'Offer Generation Agent': 'offer_generation',
-                    'Customer Communication Agent': 'customer_communication',
-                    'Audit Agent': 'audit'
+                    f'PreQualificationAgent-{demo_customer_id}': 'pre_qualification',
+                    f'DocumentCheckerAgent-{demo_customer_id}': 'document_checker',
+                    f'ApplicationAssistAgent-{demo_customer_id}': 'application_assist',
+                    f'ValuationAgent-{demo_customer_id}': 'valuation',
+                    f'CreditAssessorAgent-{demo_customer_id}': 'credit_assessor',
+                    f'UnderwritingAgent-{demo_customer_id}': 'Underwriting',
+                    f'OfferGenerationAgent-{demo_customer_id}': 'offer_generation',
+                    f'CustomerCommunicationAgent-{demo_customer_id}': 'customer_communication',
+                    f'AuditAgent-{demo_customer_id}': 'audit'
                 }
                 
                 # Create detailed agent information for each agent
@@ -1130,12 +1390,52 @@ def search_applications():
                         work_history_text += '<thead><tr><th>#</th><th>Details</th><th>Date</th></tr></thead>'
                         work_history_text += '<tbody>'
                         
+                        # Collect all detailed descriptions for the modal
+                        detailed_info = []
+                        
                         for i, log in enumerate(agent_logs, 1):
                             description = log['description']
+                            detailed_description = log.get('detailed_description', '')
                             timestamp = log['timestamp']
+                            
                             work_history_text += f'<tr><td>{i}</td><td>{description}</td><td>{timestamp}</td></tr>'
+                            
+                            # Collect detailed description if it exists
+                            if detailed_description:
+                                # Handle different types of detailed_description
+                                if isinstance(detailed_description, dict):
+                                    detail_text = str(detailed_description)
+                                elif isinstance(detailed_description, str):
+                                    detail_text = detailed_description
+                                else:
+                                    detail_text = str(detailed_description)
+                                
+                                detailed_info.append({
+                                    'step': i,
+                                    'description': description,
+                                    'detailed_description': detail_text,
+                                    'timestamp': timestamp
+                                })
                         
-                        work_history_text += '</tbody></table></div>'
+                        work_history_text += '</tbody></table>'
+                        
+                        # Add single "Get Details" button at the bottom if there are any detailed descriptions
+                        if detailed_info:
+                            # Prepare the detailed information for the modal
+                            modal_content = ""
+                            for detail in detailed_info:
+                                modal_content += f"**Step {detail['step']}: {detail['description']}**\\n"
+                                modal_content += f"Date: {detail['timestamp']}\\n"
+                                modal_content += f"Details: {detail['detailed_description']}\\n\\n"
+                            
+                            # Escape the modal content for JavaScript
+                            escaped_modal_content = modal_content.replace("'", "\\'").replace('"', '\\"').replace('\n', '\\n')
+                            
+                            work_history_text += f'<div style="text-align: center; margin-top: 15px;">'
+                            work_history_text += f'<button class="get-details-btn" onclick="showDetailModal(\'all_details_{demo_customer_id}_{agent_type}\', \'{escaped_modal_content}\')" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">📋 Get Details</button>'
+                            work_history_text += '</div>'
+                        
+                        work_history_text += '</div>'
                         
                         work_history_text += f"\n*Current status as of {datetime.datetime.now().strftime('%B %d, %Y')}*"
                         
