@@ -1,0 +1,17 @@
+# FastAPI Backend Dependencies
+fastapi==0.104.1
+uvicorn==0.24.0
+pydantic==2.4.2
+
+# Azure AI Dependencies
+azure-ai-projects==1.0.0b4
+azure-identity==1.15.0
+azure-core==1.29.5
+
+# Additional Dependencies
+python-multipart==0.0.6
+python-dotenv==1.0.0
+
+# Development Dependencies
+pytest==7.4.3
+requests==2.31.0
